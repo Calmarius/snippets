@@ -1,2 +1,3 @@
 # snippets
-Small reusable code snippet without dependencies.
+
+Small reusable code snippets without dependencies.
