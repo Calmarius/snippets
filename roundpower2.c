@@ -1,7 +1,17 @@
 #include <stdint.h>
 
+/**
+ * Rounds the number up to the next power of 2.
+ */
+
 uint64_t roundUpP2(uint64_t x)
 {
+    /** First we subtract one to avoid rounding up number that are already a power of 2.
+     * The 'or' trick fills the number with ones starting from the most signficant 1 bit.
+     * Then adding 1 to reach the next power of 2.
+     *
+     * Example: 10000001 ->subtract-> 10000000 -> 11000000 -> 11110000 -> 11111111 ->adding 1-> 100000000
+     */
     x--;
     x |= x >> 1;
     x |= x >> 2;
