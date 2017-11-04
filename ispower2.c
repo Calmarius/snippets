@@ -18,6 +18,8 @@ int ispower2(unsigned x)
     return x && !(x & (x-1));
 }
 
+#ifdef UNIT_TEST
+
 /* Unit test. */
 #include <assert.h>
 
@@ -46,3 +48,5 @@ int main()
     assert(!ispower2(0xFFFFFFFF));
     return 0;
 }
+
+#endif

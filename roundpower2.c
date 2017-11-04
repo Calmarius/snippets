@@ -24,6 +24,8 @@ uint64_t roundUpP2(uint64_t x)
     return x;
 }
 
+#ifdef UNIT_TEST
+
 #include <assert.h>
 
 int main()
@@ -39,3 +41,5 @@ int main()
 
     return 0;
 }
+
+#endif

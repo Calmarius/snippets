@@ -41,6 +41,7 @@ uint64_t fnv64(const uint8_t *buf, size_t n)
 
 /* TEST */
 
+#ifdef UNIT_TEST
 
 #include <assert.h>
 #include <string.h>
@@ -53,3 +54,5 @@ int main()
     assert(fnv32(testStr, n) == 0x7a78f512);
     assert(fnv64(testStr, n) == 0x9e527e14572072d2);
 }
+
+#endif
