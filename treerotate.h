@@ -14,13 +14,7 @@
  *
  */
 
-#include "symconcat.h"
-
-#define FN(x) CCAT(PREFIX, x)
-
-#ifndef PREFIX
-    #define PREFIX
-#endif
+#include "templateheader.h"
 
 #ifndef NODE
     #error Define the node handle type
@@ -50,7 +44,13 @@
     #error Define the macro to set the parent.
 #endif
 
-void FN(rotateRight)(NODE *root)
+#ifdef DECLARE_STUFF
+    SPECIFIER void FN(rotateRight)(NODE *root);
+    SPECIFIER void FN(rotateLeft)(NODE *root);
+#endif
+
+#ifdef DEFINE_STUFF
+SPECIFIER void FN(rotateRight)(NODE *root)
 {
     NODE A = *root;
     NODE B = LEFT(A);
@@ -65,8 +65,7 @@ void FN(rotateRight)(NODE *root)
     *root = B;
 }
 
-
-void FN(rotateLeft)(NODE *root)
+SPECIFIER void FN(rotateLeft)(NODE *root)
 {
     NODE B = *root;
     NODE A = RIGHT(B);
@@ -80,14 +79,15 @@ void FN(rotateLeft)(NODE *root)
     SETPARENT(A, rootParent);
     *root = A;
 }
+#endif
 
-#undef FN
 #undef LEFT
 #undef RIGHT
 #undef PARENT
 #undef SETLEFT
 #undef SETRIGHT
 #undef SETPARENT
-#undef PREFIX
 
 #undef NODE
+
+#include "templatefooter.h"

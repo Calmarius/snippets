@@ -22,6 +22,7 @@ typedef Node *PNode;
 #define SETLEFT(x, y) (x)->left = (y)
 #define SETRIGHT(x, y) (x)->right = (y)
 #define SETPARENT(x, y) (x)->parent = (y)
+#define DEFINE_STUFF
 
 #include "treerotate.h"
 
