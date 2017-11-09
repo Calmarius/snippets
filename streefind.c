@@ -13,15 +13,11 @@ typedef struct Node
 typedef Node *PNode;
 
 #define NODE PNode
-#define LEFT(n) (n)->left
-#define RIGHT(n) (n)->right
-#define LESS(x, y) (x < y)
-#define EQUAL(x, y) (x == y)
-#define KEY(node) (node)->key
-#define KEY_TYPE unsigned
+#define KEY(node) ((node)->key)
 #define DEFINE_STUFF
+#define NEED_FIND
 
-#include "streefind.h"
+#include "binarytree.h"
 
 void traverse(int depth, Node *root)
 {
@@ -54,7 +50,7 @@ int main()
         {
             n->left = NULL;
             n->right = NULL;
-        }        
+        }
     }
 
     for (i = 1; i <= 31; i++)
@@ -67,7 +63,7 @@ int main()
     assert(find(root, 0) == NULL);
     assert(find(root, 6969) == NULL);
     assert(find(root, 666) == NULL);
-    
+
 }
 
 #endif

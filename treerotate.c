@@ -16,15 +16,14 @@ typedef struct Node
 typedef Node *PNode;
 
 #define NODE PNode
-#define LEFT(x) (x)->left
-#define RIGHT(x) (x)->right
-#define PARENT(x) (x)->parent
-#define SETLEFT(x, y) (x)->left = (y)
-#define SETRIGHT(x, y) (x)->right = (y)
-#define SETPARENT(x, y) (x)->parent = (y)
+#define KEY(node) ((node)->key)
+#define KEY_TYPE char
+#define LESS(x, y) ((x) < (y))
+#define EQUAL(x, y) ((x) == (y))
 #define DEFINE_STUFF
+#define NEED_ROTATE
 
-#include "treerotate.h"
+#include "binarytree.h"
 
 int main()
 {
