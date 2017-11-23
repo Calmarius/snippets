@@ -20,12 +20,12 @@ typedef Node *PNode;
 
 #include "treecommon.h"
 
-
 #define NODE PNode
 
 #define DEFINE_STUFF
 #define NEED_INSERT
-#define NEED_CLEAR
+#define NEED_DELETE
+#define NEED_FIND
 
 #include "binarytree.h"
 
@@ -37,8 +37,6 @@ unsigned getRand()
     return state;
 }
 
-
-#define STEPS 0x1000
 
 void showProgress(unsigned x, unsigned max)
 {
@@ -54,20 +52,13 @@ void showProgress(unsigned x, unsigned max)
     if (percent == 100) printf("\n");
 }
 
-
-static int countNodes(Node *root)
-{
-    if (!root) return 0;
-    /*printf("%d\n", root->id);*/
-
-    return countNodes(root->left) + countNodes(root->right) + 1;
-}
+#define STEPS 0x1000
 
 int main()
 {
     int i;
     Node *root = NULL;
-    unsigned long seed = time(NULL);
+    unsigned long seed = /*time(NULL)*/1511443484;
 
     printf("Seed is: %ld\n", seed);
 
@@ -75,20 +66,36 @@ int main()
 
     for (i = 0; i < STEPS; i++)
     {
-        unsigned toInsert = getRand() % STEPS;
-        Node *node = insertUnique(&root, toInsert);
+        unsigned toTouch = getRand() % STEPS;
 
         showProgress(i + 1, STEPS);
 
-        assert(node);
-        assert(node->id == toInsert);
+        if (getRand() % 2)
+        {
+            Node *node = insertUnique(&root, toTouch);
+            assert(node);
+            assert(node->id == toTouch);
+            validate(root);
+        }
+        else
+        {
+            Node *node = find(root, toTouch);
+            int res;
 
+            res = deleteByKey(&root, toTouch);
+            assert((node && !res) || (!node && res)); /* Check if the return value is correct */
+            validate(root);
+            assert(find(root, toTouch) == NULL);
+        }
+    }
+    /* Delete all nodes at the end. */
+    for (i = 0; i < STEPS; i++)
+    {
+        showProgress(i + 1, STEPS);
+        /*printf("%u\n", i);*/
+        deleteByKey(&root, i);
         validate(root);
     }
-
-    printf("There are %d nodes.\n", countNodes(root));
-
-    clear(&root);
 }
 
 #endif
