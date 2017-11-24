@@ -104,22 +104,22 @@
      *
      * root (in): handle of the root node of the subtree.
      * key (in): the key to find.
-     * 
+     *
      * Returns the handle to node.
      */
     SPECIFIER NODE FN(find)(NODE root, KEY_TYPE key);
 #endif
 
 #ifdef NEED_ROTATE
-    /** Rotates the tree to the right. 
-     * 
+    /** Rotates the tree to the right.
+     *
      * root (in, out): The root before and after the rotation.
      *
      * The function assumes there is a left subtree.
      */
     SPECIFIER void FN(rotateRight)(NODE *root);
-    /** Rotates the tree to the left.. 
-     * 
+    /** Rotates the tree to the left..
+     *
      * root (in, out): The root before and after the rotation.
      *
      * The function assumes there is a right subtree.
@@ -128,7 +128,7 @@
 #endif
 
 #ifdef NEED_INSERT
-    /** Inserts new element into the binary tree and returns the handle of this new node. No duplicates allowed. 
+    /** Inserts new element into the binary tree and returns the handle of this new node. No duplicates allowed.
      *
      * root (in, out): The root of tree, it may change if the tree is rotated to rebalance.
      * k: the key of the new element.
@@ -225,6 +225,7 @@
 
         if (bf <= -2)
         {
+            /* The left subtree is too higher */
             int subBf = HEIGHT(RIGHT(lTree)) - HEIGHT(LEFT(lTree));
             if (subBf >= 1)
             {
@@ -239,6 +240,7 @@
         }
         else if (bf >= 2)
         {
+            /* The right subtree is too higher. */
             int subBf = HEIGHT(RIGHT(rTree)) - HEIGHT(LEFT(rTree));
             if (subBf <= -1)
             {
@@ -256,8 +258,45 @@
     }
 #endif
 
+#if defined(NEED_DELETE) || defined(NEED_INSERT)
+
+    static void FN(rebalanceUp)(NODE *root, NODE node)
+    {
+        /* Perform the rebalancing if needed and do the height*/
+        while (node != NULL_NODE)
+        {
+            NODE p = PARENT(node);
+            int linkId;
+
+            if (p != NULL_NODE)
+            {
+                /* Note if node is a left or right child. */
+                linkId = RIGHT(p) == node;
+            }
+
+            FN(rebalanceTree)(&node);
+
+            if (p != NULL_NODE)
+            {
+                /* Parent exists, update their links to the possibly new (rotated) node.*/
+                if (linkId) SET_RIGHT(p, node);
+                else SET_LEFT(p, node);
+            }
+            else
+            {
+                /* No parent node, time to leave, before nulling out the node.  */
+                break;
+            }
+
+            node = p;
+        }
+        *root = node;
+    }
+
+#endif
+
 #if defined(NEED_DELETE)
-    static void FN(deleteNode)(NODE *root, NODE node)
+    SPECIFIER void FN(deleteNode)(NODE *root, NODE node)
     {
         NODE replacement = NULL_NODE;
         NODE rc = node; /* Child of replacement */
@@ -273,6 +312,7 @@
             replacement = LEFT(node);
             while (RIGHT(replacement) != NULL_NODE)
             {
+                /* Descend right to find the rightmost node.*/
                 replacement = RIGHT(replacement);
             }
             rNode = PARENT(replacement); /* The balancing start from where the replacement was removed.*/
@@ -282,10 +322,12 @@
             if (rc != NULL_NODE) SET_PARENT(rc, rNode);
             if (rNode == node)
             {
+                /*  The parent of replacement is the node to be removed. The replacement is a left child. */
                 SET_LEFT(rNode, rc);
             }
             else
             {
+                /* Otherwise the replacement must be a right child. */
                 SET_RIGHT(rNode, rc);
             }
         }
@@ -323,8 +365,10 @@
             SET_RIGHT(replacement, RIGHT(node));
         }
 
+        /* Set pointers back to the replacement. */
         if (PARENT(node))
         {
+            /* Check if the node to be removed was a left or right child and update the appropriate link to the replacement. */
             NODE p = PARENT(node);
             if (RIGHT(p) == node) SET_RIGHT(p, replacement);
             else SET_LEFT(p, replacement);
@@ -334,46 +378,17 @@
 
         FREE_NODE(node);
 
-        /*printf("Before rebalancing:\n");
-        printf("node: "); dumpNode(node, 0);
-        printf("rNode: "); dumpNode(rNode, 0);*/
-
-        /* Perform the rebalancing, and height recalc*/
-        while (rNode != NULL_NODE)
-        {
-            NODE p = PARENT(rNode);
-            int linkId;
-
-            if (p != NULL_NODE)
-            {
-                linkId = RIGHT(p) == rNode;
-            }
-
-            FN(rebalanceTree)(&rNode);
-
-            if (p != NULL_NODE)
-            {
-                if (linkId) SET_RIGHT(p, rNode);
-                else SET_LEFT(p, rNode);
-            }
-            else
-            {
-                break;
-            }
-
-            rNode = p;
-        }
-        *root = rNode;
+        FN(rebalanceUp)(root, rNode);
     }
 
 
     SPECIFIER int FN(deleteByKey)(NODE *root, KEY_TYPE key)
     {
-        int ret;
         NODE node;
 
         node = *root;
 
+        /* Find the node to delete, using binary search tree search. */
         while (node)
         {
             if (EQUAL(key, KEY(node)))
@@ -392,8 +407,6 @@
         }
 
         return -1;
-
-        return ret;
     }
 
 
@@ -403,14 +416,12 @@
     SPECIFIER void FN(clear)(NODE *root)
     {
         NODE current;
-        /*int count = 0;*/
-
-        /*dumpTree(*root, 0);*/
 
         current = *root;
 
         if (current == NULL_NODE) return;
 
+        /* Begin post order traversal. */
         for (;;)
         {
             if (LEFT(current))
@@ -420,14 +431,14 @@
             else if (RIGHT(current))
             {
                 current = RIGHT(current);
-            }                            
+            }
             else
             {
                 break;
             }
         }
 
-        while (current)
+        while (current != NULL_NODE)
         {
             NODE toDelete = current;
 
@@ -442,7 +453,7 @@
                 {
                     /* Left child, the parent's right subtree is not traversed yet, so traverse it, if needed..*/
                     current = PARENT(current);
-                    if (RIGHT(current) != NULL_NODE) 
+                    if (RIGHT(current) != NULL_NODE)
                     {
                         current = RIGHT(current);
                         for (;;)
@@ -454,7 +465,7 @@
                             else if (RIGHT(current))
                             {
                                 current = RIGHT(current);
-                            }                            
+                            }
                             else
                             {
                                 break;
@@ -465,15 +476,12 @@
             }
             else
             {
+                /* Mark the end of the traversal. */
                 current = NULL_NODE;
             }
-            /*printf("%d\n", toDelete->id);*/
 
             FREE_NODE(toDelete);
-            /*count++;*/
         }
-
-        /*printf("Count deleted: %d\n", count);*/
 
         *root = NULL_NODE;
     }
@@ -484,45 +492,59 @@
 
     SPECIFIER NODE FN(insertUnique)(NODE *root, KEY_TYPE k)
     {
+        NODE node = *root;
         NODE newNode;
-        NODE sTree;
-        int needLink;
+        int linkId;
 
-        if (*root == NULL_NODE)
+        if (node != NULL_NODE)
         {
-            newNode = ALLOCATE_NODE();
-            if (!newNode) return NULL_NODE;
-
-            SET_KEY(newNode, k);
-            SET_HEIGHT(newNode, 1);
-            SET_LEFT(newNode, NULL_NODE);
-            SET_RIGHT(newNode, NULL_NODE);
-            SET_PARENT(newNode, *root);
-            *root = newNode;
-            return *root;
+            for (;;)
+            {
+                if (EQUAL(k, KEY(node)))
+                {
+                    /* Found the key return it instead of inserting. */
+                    return node;
+                }
+                else if (LESS(k, KEY(node)))
+                {
+                    if (LEFT(node) == NULL_NODE)
+                    {
+                        linkId = 0;
+                        break;
+                    }
+                    node = LEFT(node);
+                }
+                else
+                {
+                    if (RIGHT(node) == NULL_NODE)
+                    {
+                        linkId = 1;
+                        break;
+                    }
+                    node = RIGHT(node);
+                }
+            }
         }
 
-        if (EQUAL(k, KEY(*root))) return *root;
+        newNode = ALLOCATE_NODE();
+        if (newNode == NULL_NODE) return NULL_NODE;
 
-        if (LESS(k, KEY(*root)))
+        SET_KEY(newNode, k);
+        SET_HEIGHT(newNode, 1);
+        SET_LEFT(newNode, NULL_NODE);
+        SET_RIGHT(newNode, NULL_NODE);
+        SET_PARENT(newNode, node);
+
+        if (node)
         {
-            sTree = LEFT(*root);
-            needLink = sTree == NULL_NODE;
-            newNode = FN(insertUnique)(&sTree, k);
-            if (needLink) SET_PARENT(newNode, *root);
-            SET_LEFT(*root, sTree);
+            if (linkId) SET_RIGHT(node, newNode); else SET_LEFT(node, newNode);
+
+            FN(rebalanceUp)(root, node);
         }
         else
         {
-            sTree = RIGHT(*root);
-            needLink = sTree == NULL_NODE;
-            newNode = FN(insertUnique)(&sTree, k);
-            if (needLink) SET_PARENT(newNode, *root);
-            SET_RIGHT(*root, sTree);
+            *root = newNode;
         }
-
-        /* Normalize the current subtree.  */
-        FN(rebalanceTree)(root);
 
         return newNode;
     }
