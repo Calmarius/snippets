@@ -108,7 +108,7 @@
      * Returns the handle to node.
      */
     SPECIFIER NODE FN(find)(NODE root, KEY_TYPE key);
-#endif
+#endif /* NEED_FIND */
 
 #ifdef NEED_ROTATE
     /** Rotates the tree to the right.
@@ -125,7 +125,7 @@
      * The function assumes there is a right subtree.
      */
     SPECIFIER void FN(rotateLeft)(NODE *root);
-#endif
+#endif /* NEED_ROTATE */
 
 #ifdef NEED_INSERT
     /** Inserts new element into the binary tree and returns the handle of this new node. No duplicates allowed.
@@ -136,7 +136,7 @@
      * Returns a handle to the new node.
      */
     SPECIFIER NODE FN(insertUnique)(NODE *root, KEY_TYPE k);
-#endif
+#endif /* NEED_INSERT */
 
 #if defined(NEED_INSERT) || defined(NEED_DELETE)
     /** Rebalaces tree if needed.
@@ -146,7 +146,7 @@
      * This is an internal function it shouldn't be used.
      */
     static void FN(rebalanceTree)(NODE *root);
-#endif
+#endif /* defined(NEED_INSERT) || defined(NEED_DELETE) */
 
 #ifdef NEED_DELETE
     /** Deletes key from the tree.
@@ -164,7 +164,7 @@
      * This is an internal function do not use unless you know what you are doing.
      */
     static void FN(deleteRoot)(NODE *root);
-#endif
+#endif /* NEED_DELETE */
 
 #ifdef NEED_CLEAR
     /* Clears the tree, sets the root node NULL_NODE*/
@@ -182,7 +182,7 @@
         if (EQUAL(key, KEY(root))) return root;
         return FN(find)(RIGHT(root), key);
     }
-#endif
+#endif /* NEED_FIND */
 
 #ifdef NEED_ROTATE
     SPECIFIER void FN(rotateRight)(NODE *root)
@@ -214,7 +214,7 @@
         SET_PARENT(A, rootParent);
         *root = A;
     }
-#endif
+#endif /* NEED_ROTATE */
 
 #if defined(NEED_INSERT) || defined(NEED_DELETE)
     static void FN(rebalanceTree)(NODE *root)
@@ -256,7 +256,7 @@
 
         HEIGHT_RECALC(*root);
     }
-#endif
+#endif /* defined(NEED_INSERT) || defined(NEED_DELETE) */
 
 #if defined(NEED_DELETE) || defined(NEED_INSERT)
 
@@ -292,8 +292,7 @@
         }
         *root = node;
     }
-
-#endif
+#endif /* defined(NEED_DELETE) || defined(NEED_INSERT) */
 
 #if defined(NEED_DELETE)
     SPECIFIER void FN(deleteNode)(NODE *root, NODE node)
@@ -408,9 +407,8 @@
 
         return -1;
     }
+#endif /* defined(NEED_DELETE) */
 
-
-#endif
 
 #ifdef NEED_CLEAR
     SPECIFIER void FN(clear)(NODE *root)
@@ -438,6 +436,7 @@
             }
         }
 
+        /* Post order traversal, cleaning up nodes.  */
         while (current != NULL_NODE)
         {
             NODE toDelete = current;
@@ -486,7 +485,7 @@
         *root = NULL_NODE;
     }
 
-#endif
+#endif /* NEED_CLEAR */
 
 #ifdef NEED_INSERT
 
@@ -496,6 +495,7 @@
         NODE newNode;
         int linkId;
 
+        /* Find the insertion point using binary search tree search. */
         if (node != NULL_NODE)
         {
             for (;;)
@@ -526,6 +526,7 @@
             }
         }
 
+        /* Set up new node. */
         newNode = ALLOCATE_NODE();
         if (newNode == NULL_NODE) return NULL_NODE;
 
@@ -535,6 +536,7 @@
         SET_RIGHT(newNode, NULL_NODE);
         SET_PARENT(newNode, node);
 
+        /* Link the new node. */
         if (node)
         {
             if (linkId) SET_RIGHT(node, newNode); else SET_LEFT(node, newNode);
@@ -548,12 +550,9 @@
 
         return newNode;
     }
-    #endif
+#endif /* NEED_INSERT */
 
-    #ifdef NEED_DELETE
-    #endif
-
-#endif
+#endif /* DEFINE_STUFF */
 
 #undef NODE
 #undef LEFT
