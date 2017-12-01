@@ -1,5 +1,7 @@
 #include "templateheader.h"
 
+#include <stddef.h>
+
 #ifndef ARRAY
     #error the handle type for the array must be provided.
 #endif
@@ -12,28 +14,37 @@
  * Accesses the array's buffer.
  */
 #ifndef ARR_BUF
-    #define AT(arr) arr.buf
+    #define AT(arr) arr->buf
 #endif
 
 /**
  * Function to set new buffer into the array.
  */
 #ifndef SET_BUF
-    #define SET_BUF(arr, newbuf) arr.buf = newbuf
+    #define SET_BUF(arr, newbuf) (arr)->buf = (newbuf)
 #endif
 
 /**
  * The number of allocated entries in the array.
  */
-#ifndef N_ALLOCD(arr)
-    #define N_ALLOCD(arr) arr.nAllocd
+#ifndef N_ALLOCD
+    #define N_ALLOCD(arr) (arr)->nAllocd
+#endif
+
+
+#ifndef SET_N_ALLOCD
+    #define SET_N_ALLOCD(arr, newAllocd) (arr)->nAllocd = (newAllocd)
 #endif
 
 /**
  * The number of actual elements in the array.
  */
-#ifndef N_ELEMENTS(arr)
-    #define N_ELEMENTS(arr) arr.n
+#ifndef N_ELEMENTS
+    #define N_ELEMENTS(arr) (arr)->n
+#endif
+
+#ifndef SET_N_ELEMENTS
+    #define SET_N_ELEMENTS(arr, newElements) (arr)->n = (newElements)
 #endif
 
 
@@ -41,7 +52,11 @@
  * Macro to reallocate a buffer to hold n elements.
  */
 #ifndef REALLOCATE
-    #define REALLOCATE(buf, n) realloc(buf, (n)*sizeof(T))
+    #define REALLOCATE(buf, n) realloc((buf), (n)*sizeof(T))
+#endif
+
+#ifndef DEALLOCATE
+    #define DEALLOCATE(buf) free(buf)
 #endif
 
 /**
@@ -52,6 +67,16 @@
 #endif
 
 #ifdef DECLARE_STUFF
+    /**
+     * Initicalizes the array to be empty.
+     */
+    SPECIFIER void FN(init)(ARRAY arr);
+
+    /**
+     * Cleans up the array.
+     */
+    SPECIFIER void FN(deinit)(ARRAY arr);
+
     /**
      * Reserves the given area in the array.
      *
@@ -72,6 +97,20 @@
 
 #ifdef DEFINE_STUFF
 
+SPECIFIER void FN(init)(ARRAY arr)
+{
+    SET_N_ELEMENTS(arr, 0);
+    SET_N_ALLOCD(arr, 0);
+    SET_BUF(arr, NULL);
+}
+
+
+SPECIFIER void FN(deinit)(ARRAY arr)
+{
+    DEALLOCATE(ARR_BUF(arr));
+}
+
+
 SPECIFIER int FN(reserve)(ARRAY arr, size_t nElements)
 {
     T *newBuf = NULL;
@@ -82,11 +121,12 @@ SPECIFIER int FN(reserve)(ARRAY arr, size_t nElements)
     if (newBuf == NULL) return -1;
 
     SET_BUF(arr, newBuf);
+    SET_N_ALLOCD(arr, nElements);
     return 0;
 }
 
 
-SPECIFIER int FN(add)(ARRAY arr, const T *elem)
+SPECIFIER int FN(add)(ARRAY arr,  T elem)
 {
     size_t nElms = N_ELEMENTS(arr);
 
@@ -96,7 +136,10 @@ SPECIFIER int FN(add)(ARRAY arr, const T *elem)
         if (res) return res;
     }
 
-    ARR_BUF(arr)[nElms] = *elem;
+    ARR_BUF(arr)[nElms++] = elem;
+    SET_N_ELEMENTS(arr, nElms);
+
+    return 0;
 }
 
 
@@ -109,8 +152,11 @@ SPECIFIER int FN(add)(ARRAY arr, const T *elem)
 #undef T
 #undef ARR_BUF
 #undef N_ALLOCD
+#undef SET_N_ALLOCD
 #undef N_ELEMENTS
+#undef SET_N_ELEMENTS
 #undef REALLOCATE
+#undef DEALLOCATE
 #undef INCREMENT_FN
 #undef DECLARE_STUFF
 #undef DEFINE_STUFF
