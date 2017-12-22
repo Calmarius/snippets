@@ -26,6 +26,7 @@ typedef Node *PNode;
 #define DEFINE_STUFF
 #define NEED_INSERT
 #define NEED_CLEAR
+#define NEED_INORDER_ITERATE
 
 #include "binarytree.h"
 
@@ -65,7 +66,7 @@ static int countNodes(Node *root)
 
 int main()
 {
-    int i;
+    unsigned i;
     Node *root = NULL;
     unsigned long seed = time(NULL);
 
@@ -89,6 +90,32 @@ int main()
     printf("There are %d nodes.\n", countNodes(root));
 
     clear(&root);
+
+    /* Test inorder traversal */
+    for (i = 0; i < 100; i++)
+    {
+        insertUnique(&root, i);
+    }
+    {
+        Node *n;
+
+        for (i = 0; i < 100; i++)
+        {
+            if (i == 0)
+            {
+                n = begin(root);
+            }
+            else
+            {
+                n = next(n);
+            }
+
+            assert(n->id == i);
+        }
+    }
+
+    clear(&root);
+
 }
 
 #endif

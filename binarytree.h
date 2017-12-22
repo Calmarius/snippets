@@ -157,13 +157,6 @@
      * Returns zero if the node is found and deleted, returns non-zero if the element is not found.
      */
     SPECIFIER int FN(deleteByKey)(NODE *root, KEY_TYPE k);
-    /** Deletes root of the subtree.
-     *
-     * root (in, out): The root of the tree to delete, it will be changed by another suitable element.
-     *
-     * This is an internal function do not use unless you know what you are doing.
-     */
-    static void FN(deleteRoot)(NODE *root);
 #endif /* NEED_DELETE */
 
 #ifdef NEED_CLEAR
@@ -171,9 +164,59 @@
     SPECIFIER int FN(clear)(NODE *root);
 #endif
 
+#ifdef NEED_INORDER_ITERATE
+    /**
+     * Returns with the leftmost node starting an inorder traversal. For empty trees it returns NULL_NODE
+     */
+    SPECIFIER NODE FN(begin)(NODE root);
+
+    /**
+     *  Returns the inorder successor of the node. 
+     * If n is the last node it returns NULL_NODE. 
+     * If n is NULL_NODE it returns NULL_NODE. 
+     */
+    SPECIFIER NODE FN(next)(NODE n);
+#endif
+
 #endif
 
 #ifdef DEFINE_STUFF
+
+#ifdef NEED_INORDER_ITERATE
+    SPECIFIER NODE FN(begin)(NODE root)
+    {
+        NODE n = root;
+
+        if (n == NULL_NODE) return NULL_NODE;
+
+        while (LEFT(n) != NULL_NODE)
+        {
+            n = LEFT(n);
+        }
+
+        return n;
+    }
+
+    SPECIFIER NODE FN(next)(NODE n)
+    {
+        if (RIGHT(n) != NULL_NODE)
+        {
+            /* There is a right subtree, its leftmost node will be the next. */
+            return FN(begin)(RIGHT(n));
+        }
+        /* No right subtree. 
+         * We must traverse up, until we find the nearest node whose left subtree contains the current node. 
+         * It's the inorder successor.
+         */
+        while ((PARENT(n) != NULL_NODE) && (RIGHT(PARENT(n)) == n))
+        {
+            n = PARENT(n);
+        }
+        return PARENT(n);
+    }
+    
+#endif
+
 #ifdef NEED_FIND
     SPECIFIER NODE FN(find)(NODE root, KEY_TYPE key)
     {
