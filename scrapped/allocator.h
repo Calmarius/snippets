@@ -100,7 +100,32 @@
  */
 
 #ifdef DECLARE_STUFF
+    /**
+     * Toggles the allocation state of a block.
+     * 
+     * ctx (in,out): Context
+     * addr (in): The beginning address of the allocation (used for freeing), when NULL it find the appropriate place for the allocation.
+     * size (in): The size of the allocation.
+     * 
+     * return address of the beginning of the toggled block.  
+     */
     SPECIFIER void *FN(memToggle)(ALLOC_CTX ctx, void *addr, size_t size);
+    /**
+     * Allocates memory, which can be freed with memFree.
+     * 
+     * ctx (in, out): Context.
+     * size (in): Size.
+     * 
+     * Returns a pointer to the allocated area or NULL on failure.
+     */
+    SPECIFIER void *FN(memAlloc)(ALLOC_CTX ctx, size_t size);
+    /**
+     * Frees memory allocated by memAlloc.
+     * 
+     * ctx (in, out): Allocation context.
+     * ptr (in): The pointer to free. 
+     */ 
+    SPECIFIER void FN(memFree)(ALLOC_CTX ctx, void *ptr);
 #endif
 
 #ifdef DEFINE_STUFF
@@ -163,6 +188,12 @@ SPECIFIER void *FN(memToggle)(ALLOC_CTX ctx, void *addr, size_t size)
             return newPage;
         }
     }
+}
+
+
+SPECIFIER void *FN(memAlloc)(ALLOC_CTX ctx, size_t size)
+{
+    
 }
 
 #endif
