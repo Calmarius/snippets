@@ -11,3 +11,7 @@
     #define SPECIFIER
 #endif
 
+#ifndef STATIC_ASSERT
+    #define STATIC_ASSERT(pred, id) typedef struct {int CCAT(SA_field_,id) : !!(pred)} CCAT(SA_,id);
+#endif
+
