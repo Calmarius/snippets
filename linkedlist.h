@@ -148,6 +148,9 @@ SPECIFIER void FN(sort)(LIST_TYPE list)
     size_t segmentSize = 1;
     ELEM newList = GET_HEAD(list);
     ELEM prevList;
+    #ifdef SET_TAIL
+        ELEM prevTail = NULL_LINK;
+    #endif
 
     for (;; segmentSize *= 2)
     {
@@ -159,6 +162,9 @@ SPECIFIER void FN(sort)(LIST_TYPE list)
 
         prevList = newList;
         newList = NULL_LINK;
+        #ifdef SET_TAIL
+            prevTail = tail;
+        #endif
         tail = NULL_LINK;
         cursor = prevList;
 
@@ -236,6 +242,9 @@ SPECIFIER void FN(sort)(LIST_TYPE list)
     }
 done:
     SET_HEAD(list, prevList);
+    #ifdef SET_TAIL
+        SET_TAIL(list, prevTail);
+    #endif
 }
 #endif /*defined(LESS)*/
 

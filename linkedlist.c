@@ -16,20 +16,21 @@ typedef struct
     Element *tail;
 } List, *PList;
 
-#define ELEM PElement
-#define LIST_TYPE PList
-#define GET_HEAD(list) (list)->head
-#define SET_HEAD(list, elem) (list)->head = elem
-#define PREFIX SL_
-#define DEFINE_STUFF
-#include "linkedlist.h"
-
 Element *arrBase;
 
 void dump(Element *elm, const char *caption)
 {
     printf("%s: (%u) (index:  %d)\n", caption, elm ? elm->payload : 0xFFFFFFFF, elm ? (int)(elm - arrBase) : -1);
 }
+
+#define ELEM PElement
+#define LIST_TYPE PList
+#define GET_HEAD(list) (list)->head
+#define SET_HEAD(list, elem) (list)->head = elem
+#define LESS(e1, e2) ((e1)->payload < (e2)->payload)
+#define PREFIX SL_
+#define DEFINE_STUFF
+#include "linkedlist.h"
 
 #define ELEM PElement
 #define LIST_TYPE PList
@@ -221,7 +222,6 @@ int main()
 
         arrBase = elm;
 
-        /* Sort list. */
         DLT_sort(&list);
 
         {
@@ -233,15 +233,63 @@ int main()
                 assert(pElem->payload == i);
                 if (i > 0)
                 {
+                    assert(pElem->prev);
                     assert(pElem->prev->payload == i - 1);
+                }
+                else
+                {
+                    assert(!pElem->prev);
                 }
                 if (i < ELEMENTS - 1)
                 {
+                    assert(pElem->next);
                     assert(pElem->next->payload == i + 1);
                 }
                 pElem = pElem->next;
             }
+            assert(!pElem);
         }
+        assert(list.head->payload == 0);
+        assert(list.tail->payload == ELEMENTS - 1);
+
+        /* Test sorting of single linked list */
+        for (i = 0; i < ELEMENTS; i++)
+        {
+            elm[i].next = NULL;
+            elm[i].prev = NULL;
+        }
+
+        SL_initList(&list);
+        {
+            Element *tmp = NULL;
+
+            for (i = 0; i < ELEMENTS; i++)
+            {
+                SL_insertAfter(tmp, &elm[i]);
+                tmp = &elm[i];
+            }
+            list.head = &elm[0];
+        }
+
+        SL_sort(&list);
+
+        {
+            Element *pElem = list.head;
+
+            for (i = 0; i < ELEMENTS; i++)
+            {
+                assert(pElem);
+                assert(pElem->payload == i);
+                if (i < ELEMENTS - 1)
+                {
+                    assert(pElem->next);
+                    assert(pElem->next->payload == i + 1);
+                }
+                pElem = pElem->next;
+            }
+            assert(!pElem);
+        }
+        assert(list.head->payload == 0);
     }
     #undef ELEMENTS
 
