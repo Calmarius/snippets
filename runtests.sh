@@ -6,7 +6,9 @@ set -e
 
 for F in $CFILES
 do
-    echo "Running test in $F"
+    echo
+    echo "*** Running test in $F ***"
+    echo
     gcc -DUNIT_TEST -Wall -Wextra -Werror -g $F
     valgrind --leak-check=full --show-reachable=yes --error-exitcode=1 ./a.out
 done
