@@ -5,7 +5,7 @@
 
 typedef struct Element
 {
-    int payload;
+    unsigned payload;
     struct Element *next;
     struct Element *prev;
 } Element, *PElement;
@@ -28,7 +28,7 @@ Element *arrBase;
 
 void dump(Element *elm, const char *caption)
 {
-    printf("%s: (%d) (index:  %d)\n", caption, elm ? elm->payload : -1, elm ? (int)(elm - arrBase) : -1);
+    printf("%s: (%u) (index:  %d)\n", caption, elm ? elm->payload : 0xFFFFFFFF, elm ? (int)(elm - arrBase) : -1);
 }
 
 #define ELEM PElement
@@ -44,8 +44,11 @@ void dump(Element *elm, const char *caption)
 #define DEFINE_STUFF
 #include "linkedlist.h"
 
-/* For random. */
-#include "simplerandom.c"
+static unsigned getRand(unsigned *state)
+{
+    *state = (1103515245* *state + 12345) % 0x7FFFFFFF;
+    return *state;
+}
 
 #include <time.h>
 
@@ -183,12 +186,6 @@ int main()
             elm[with] = tmp;
         }
 
-        /* Debug print*/
-        for (i = 0; i < ELEMENTS; i++)
-        {
-            printf("Elms[%d]: %d\n", (int)i, elm[i].payload);
-        }
-
         /* Populate list */
         DLT_initList(&list);
         for (i = 0; i < ELEMENTS; i++)
@@ -226,7 +223,6 @@ int main()
 
         /* Sort list. */
         DLT_sort(&list);
-        printf("Beyond sort.\n");
 
         {
             Element *pElem = list.head;
@@ -246,25 +242,8 @@ int main()
                 pElem = pElem->next;
             }
         }
-
-
-        /* Debug print*/
-        {
-            Element *pElem = list.head;
-
-            while (pElem)
-            {
-                printf("pElem: %d\n", pElem->payload);
-                pElem = pElem->next;
-            }
-        }
-
-
-
     }
     #undef ELEMENTS
-
-
 
     return 0;
 }
