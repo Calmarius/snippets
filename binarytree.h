@@ -133,13 +133,15 @@
      * root (in, out): The root of tree, it may change if the tree is rotated to rebalance.
      * k: the key of the new element.
      *
+     * It treats the tree as an AVL tree, which is rebalanced as needed. The root node may change.
+     *
      * Returns a handle to the new node.
      */
     SPECIFIER NODE FN(insertUnique)(NODE *root, KEY_TYPE k);
 #endif /* NEED_INSERT */
 
 #if defined(NEED_INSERT) || defined(NEED_DELETE)
-    /** Rebalaces tree if needed.
+    /** Rebalaces tree if needed (AVL tree).
      *
      * root (in, out): The root of the tree, it may change as a result of rotation.
      *
@@ -153,6 +155,8 @@
      *
      * root (in, out): The root of the tree, it may change if the deletion causes rotation.
      * k (in): The key to delete.
+     *
+     * It treats the tree as an AVL tree, which is rebalanced as needed. The root node may change.
      *
      * Returns zero if the node is found and deleted, returns non-zero if the element is not found.
      */

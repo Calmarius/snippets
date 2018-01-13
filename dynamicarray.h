@@ -14,7 +14,7 @@
  * Accesses the array's buffer.
  */
 #ifndef ARR_BUF
-    #define AT(arr) arr->buf
+    #define ARR_BUF(arr) arr->buf
 #endif
 
 /**
@@ -83,7 +83,7 @@
      * Returns 0 on success, nonzero on failure.
      *
      * If the requested number of elements is smaller than the number of already allocated elements, the function does nothing.
-     * If the requested number of elements is larger then the number of elements, the function allocate
+     * If the requested number of elements is larger then the number of elements, the function allocates space to contain the elements.
      */
     SPECIFIER int FN(reserve)(ARRAY arr, size_t nElements);
 
