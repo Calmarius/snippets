@@ -58,7 +58,7 @@ int main()
 {
     int i;
     Node *root = NULL;
-    unsigned long seed = /*time(NULL)*/1511443484;
+    unsigned long seed = time(NULL);
 
     printf("Seed is: %ld\n", seed);
 
