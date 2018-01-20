@@ -124,6 +124,36 @@ SPECIFIER void FN(insertAfter)(ELEM elem, ELEM toBeInserted)
 }
 
 
+SPECIFIER void FN(removeHead)(LIST_TYPE list)
+{
+    ELEM head = GET_HEAD(list);
+    ELEM next = GET_NEXT(head);
+
+    #ifdef SET_PREV
+        if (next != NULL_LINK) SET_PREV(next, NULL_LINK);
+    #endif
+
+    SET_HEAD(list, next);
+    #ifdef SET_TAIL
+        if (next == NULL_LINK) SET_TAIL(list, NULL_LINK);
+    #endif
+}
+
+
+#ifdef GET_TAIL
+SPECIFIER void FN(removeTail)(LIST_TYPE list)
+{
+    ELEM tail = GET_TAIL(list);
+    ELEM prev = GET_PREV(tail);
+
+    if (prev != NULL_LINK) SET_NEXT(prev, NULL_LINK);
+
+    SET_TAIL(list, prev);
+    if (prev == NULL_LINK) SET_HEAD(list, NULL_LINK);
+}
+#endif
+
+
 #if defined(GET_TAIL)  && defined(SET_TAIL)
 SPECIFIER void FN(addTail)(LIST_TYPE list, ELEM elem)
 {

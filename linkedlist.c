@@ -161,6 +161,47 @@ int main()
     assert(list.tail->prev->prev->prev->prev == &e3);
     assert(list.tail->prev->prev->prev->prev->prev == NULL);
 
+    DLT_removeHead(&list);
+    assert(list.head == &e2);
+    assert(list.head->next == &e4);
+    assert(list.head->next->next == &e1);
+    assert(list.head->next->next->next == &e5);
+    assert(list.head->next->next->next->next == NULL);
+
+    DLT_removeTail(&list);
+    assert(list.tail == &e1);
+    assert(list.tail->prev == &e4);
+    assert(list.tail->prev->prev == &e2);
+    assert(list.tail->prev->prev->prev == NULL);
+
+    DLT_removeHead(&list);
+    assert(list.head == &e4);
+    assert(list.head->next == &e1);
+    assert(list.head->next->next == NULL);
+    assert(list.tail == &e1);
+    assert(list.tail->prev == &e4);
+    assert(list.tail->prev->prev == NULL);
+
+    DLT_removeTail(&list);
+    assert(list.head == &e4);
+    assert(list.head->next == NULL);
+    assert(list.tail == &e4);
+    assert(list.tail->prev == NULL);
+
+    DLT_removeTail(&list);
+    assert(list.head == NULL);
+    assert(list.tail == NULL);
+
+    DLT_addHead(&list, &e1);
+    assert(list.head == &e1);
+    assert(list.head == list.tail);
+
+    DLT_removeHead(&list);
+    assert(list.head == NULL);
+    assert(list.tail == NULL);
+
+
+
     /* Sorting*/
     #define ELEMENTS 30
     {
