@@ -74,6 +74,17 @@ SPECIFIER FN(addHead)(LIST_TYPE list, ELEM elem);
 /* Performs merge sort on the list. */
     SPECIFIER FN(sort)(LIST_TYPE list);
 
+    SPECIFIER void FN(removeHead)(LIST_TYPE list);
+
+#ifdef SET_TAIL
+    SPECIFIER void FN(removeTail)(LIST_TYPE list);
+#endif
+
+#ifdef LESS
+    SPECIFIER void FN(sort)(LIST_TYPE list);
+#endif
+
+
 #endif /*DECLARE_STUFF*/
 
 
