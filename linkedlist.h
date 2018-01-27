@@ -52,6 +52,7 @@
     /*  #define LESS(elem1, elem2) (elem1)->payload < (elem2)->payload */
 #endif
 
+/* The pointer that doesn't point any node. */
 #ifndef NULL_LINK
     #define NULL_LINK NULL
 #endif
@@ -69,18 +70,22 @@ SPECIFIER FN(addHead)(LIST_TYPE list, ELEM elem);
     SPECIFIER FN(addTail)(LIST_TYPE list, ELEM elem);
 #endif
 
+/* Insert an element after a given element. Note: it's doesn't update any head an tail pointers.*/
     SPECIFIER void FN(insertAfter)(ELEM elem, ELEM toBeInserted);
 
 /* Performs merge sort on the list. */
     SPECIFIER FN(sort)(LIST_TYPE list);
 
+/* Removes the element at the head. It updates the head pointer, and the tail pointer if necessary. */
     SPECIFIER void FN(removeHead)(LIST_TYPE list);
 
 #ifdef SET_TAIL
+/* Removes the element at the tail. It updates the tail pointer, and the head pointer if necessary. */
     SPECIFIER void FN(removeTail)(LIST_TYPE list);
 #endif
 
 #ifdef LESS
+/* Sorts the linked list according to the sorting criteria specified by the LESS macro. */
     SPECIFIER void FN(sort)(LIST_TYPE list);
 #endif
 
