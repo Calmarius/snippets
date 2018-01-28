@@ -46,6 +46,52 @@ int main()
         assert(C[2] == 0xBBBBBBBB);
         assert(C[3] == 0x99999999);
         assert(carry == 1);
+
+        carry = addBigintEx(A, 4, B, 1, C);
+        assert(C[0] == 0xFFFFFFFE);
+        assert(C[1] == 0xEEEEEEEF);
+        assert(C[2] == 0xDDDDDDDD);
+        assert(C[3] == 0xCCCCCCCC);
+        assert(carry == 0);
+
+        /* Check if it works, when output matches input, (it should).*/
+        carry = addBigint(A, B, A, 4);
+        assert(A[0] == 0xFFFFFFFE);
+        assert(A[1] == 0xDDDDDDDD);
+        assert(A[2] == 0xBBBBBBBB);
+        assert(A[3] == 0x99999999);
+        assert(carry == 1);
+    }
+    {
+        uint32_t A[4] = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
+        uint32_t B[4] = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
+        uint32_t C[8];
+
+        mulBigint(A, B, C, 4);
+        assert(C[0] == 0x00000001);
+        assert(C[1] == 0x00000000);
+        assert(C[2] == 0x00000000);
+        assert(C[3] == 0x00000000);
+        assert(C[4] == 0xFFFFFFFE);
+        assert(C[5] == 0xFFFFFFFF);
+        assert(C[6] == 0xFFFFFFFF);
+        assert(C[7] == 0xFFFFFFFF);
+    }
+
+    {
+        uint32_t A[4] = {0x12345678, 0x12345678, 0x12345678, 0x12345678};
+        uint32_t B[4] = {0x87654321, 0x87654321, 0x87654321, 0x87654321};
+        uint32_t C[8];
+
+        mulBigint(A, B, C, 4);
+        assert(C[0] == 0x70b88d78);
+        assert(C[1] == 0xeb11e7f5);
+        assert(C[2] == 0x656b4272);
+        assert(C[3] == 0xdfc49cf0);
+        assert(C[4] == 0x78acdc7d);
+        assert(C[5] == 0xfe538200);
+        assert(C[6] == 0x83fa2782);
+        assert(C[7] == 0x09a0cd05);
     }
 
     printf("ALL is OK!\n");

@@ -16,22 +16,65 @@
 
 #ifdef DECLARE_STUFF
 /**
- * Adds two words together, returns with the carry.
+ * Adds two words together.
+ *
+ * a, b (in): The two digits to add.
+ * result (out): The sum.
+ *
+ * Returns the carry.
  */
-static int FN(addDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *result);
+SPECIFIER int FN(addDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *result);
 
 /**
  * Multiplies two words together, returns the result in two parts.
+ *
+ * a, b (in): The two words to multiply.
+ * resultHigh, resultLow: The result in two parts.
  */
-static int FN(mulDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *resultHigh, WORD_TYPE *resultLow);
+SPECIFIER void FN(mulDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *resultHigh, WORD_TYPE *resultLow);
 
 /**
  * Adds two big integers together.
  *
- * The numbers and the result is an array of words in little endian order.
- * 'n' is the number of words in each array.
+ * aWords (in): The words in the first number in little endian order.
+ * bWords (in): The words in the second number in little endian order.
+ * result (out): The result words in little endian order.
+ * n (in): The number of words in each of these numbers.
+ *
+ * Returns the carry.
+ *
+ * The output can be one of the inputs.
  */
-static int FN(addBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
+SPECIFIER int FN(addBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
+
+/**
+ * Adds big integers whose lengths differ.
+ *
+ * aWords (in): The first number. Words in little endian order.
+ * nA (in): Number of words in the first number.
+ * bWords (in): The second number. Words in little endian order.
+ * nB (in): Number of words in the second number.
+ * result (out): The result. It should contain at least as many words as the larger number.
+ *
+ * The output can be the longer input.
+ */
+SPECIFIER int FN(addBigintEx)(
+    WORD_TYPE *aWords,
+    size_t nA,
+    WORD_TYPE *bWords,
+    size_t nB,
+    WORD_TYPE *result);
+
+/**
+ * Multiplies two big integers.
+ *
+ * aWords (in): The first number. Words in little endian order.
+ * bWords (in): The second number. Words in little endian order.
+ * result (out): The result of the multiplication. Words in little endian order.
+ *      This array must be able to contain twice as many words as the two arguemnts.
+ * n (in): The number of words in each array.
+ */
+SPECIFIER void FN(mulBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n);
 
 
 
@@ -39,14 +82,14 @@ static int FN(addBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result
 
 #ifdef DEFINE_STUFF
 
-static int FN(addDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *result)
+SPECIFIER int FN(addDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *result)
 {
     *result = a + b;
     return *result < a;
 }
 
 
-static void FN(mulDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *resultHigh, WORD_TYPE *resultLow)
+SPECIFIER void FN(mulDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *resultHigh, WORD_TYPE *resultLow)
 {
     /*
         Split the numbers to two halves a_1 and a_0, to be able to do the multiplication.
@@ -73,20 +116,75 @@ static void FN(mulDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *resultHigh, WORD_T
 }
 
 
-static int FN(addBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
+SPECIFIER int FN(addBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
 {
     size_t i;
     int carry = 0;
     WORD_TYPE r;
+    WORD_TYPE s;
 
     for (i = 0; i < n; i++)
     {
-        result[i] = carry;
+        s = carry;
         carry = FN(addDigit)(aWords[i], bWords[i], &r);
-        result[i] += r;
+        result[i] = s + r;
+        if (result[i] < s) carry = 1;
     }
-    
+
     return carry;
+}
+
+
+SPECIFIER int FN(addBigintEx)(
+    WORD_TYPE *aWords,
+    size_t nA,
+    WORD_TYPE *bWords,
+    size_t nB,
+    WORD_TYPE *result)
+{
+    size_t i;
+    int carry = 0;
+    size_t n = nA > nB ? nA : nB;
+    WORD_TYPE r;
+    WORD_TYPE s;
+    WORD_TYPE a;
+    WORD_TYPE b;
+
+    for (i = 0; i < n; i++)
+    {
+        s = carry;
+        a = i >= nA ? 0 : aWords[i];
+        b = i >= nB ? 0 : bWords[i];
+        carry = FN(addDigit)(a, b, &r);
+        result[i] = s + r;
+        if (result[i] < s) carry = 1;
+    }
+
+    return carry;
+}
+
+SPECIFIER void FN(mulBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
+{
+    size_t i, j, k;
+    WORD_TYPE tmp[2];
+
+    for (k = 0; k < 2*n; k++)
+    {
+        result[k] = 0;
+    }
+
+    /* long multiplication algorithm. */
+    for (i = 0; i < n; i++)
+    {
+        for (j = 0; j < n; j++)
+        {
+            size_t k = i + j;
+
+            FN(mulDigit)(aWords[j], bWords[i], &tmp[1], &tmp[0]);
+            FN(addBigintEx)(result + k, 2*n - k, tmp, 2, result + k);
+        }
+    }
+
 }
 
 #endif
