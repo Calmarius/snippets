@@ -1,4 +1,4 @@
-#include "templateheader.h"
+#include "meta/templateheader.h"
 
 #include <stddef.h>
 
@@ -299,7 +299,7 @@ done:
 #endif /*DEFINE_STUFF*/
 
 
-#include "templatefooter.h"
+#include "meta/templatefooter.h"
 
 #undef ELEM
 #undef LIST_TYPE

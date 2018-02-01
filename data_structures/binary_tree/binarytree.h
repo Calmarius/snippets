@@ -1,5 +1,5 @@
 
-#include "templateheader.h"
+#include "meta/templateheader.h"
 
 /* A handle that represents a node in the tree. */
 #ifndef NODE
@@ -626,4 +626,4 @@
 #undef HEIGHT_RECALC
 
 
-#include "templatefooter.h"
+#include "meta/templatefooter.h"

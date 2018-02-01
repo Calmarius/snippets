@@ -1,4 +1,4 @@
-#include "templateheader.h"
+#include "meta/templateheader.h"
 
 #include <stddef.h>
 
@@ -190,7 +190,7 @@ SPECIFIER void FN(mulBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *re
 #endif
 
 
-#include "templatefooter.h"
+#include "meta/templatefooter.h"
 #undef WORD_TYPE
 #undef HALF_WORD_BITS
 #undef HALF_WORD_BASE

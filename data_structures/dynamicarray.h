@@ -1,4 +1,4 @@
-#include "templateheader.h"
+#include "meta/templateheader.h"
 
 #include <stddef.h>
 
@@ -147,7 +147,7 @@ SPECIFIER int FN(add)(ARRAY arr,  T elem)
 
 
 
-#include "templatefooter.h"
+#include "meta/templatefooter.h"
 #undef ARRAY
 #undef T
 #undef ARR_BUF

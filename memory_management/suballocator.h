@@ -1,4 +1,4 @@
-#include "templateheader.h"
+#include "meta/templateheader.h"
 
 #ifndef T
     #error You must define the element type.
@@ -84,7 +84,7 @@
 #endif /* DEFINE_STUFF */
 
 
-#include "templatefooter.h"
+#include "meta/templatefooter.h"
 #undef T
 #undef ALLOC_CTX
 #undef ADD_FREE_BLOCK
