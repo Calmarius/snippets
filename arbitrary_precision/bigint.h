@@ -26,12 +26,24 @@
 SPECIFIER int FN(addDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *result);
 
 /**
+ * Subtracts two words.
+ *
+ * a, b (in): The two digits to subtract.
+ * result (out): The difference.
+ *
+ * Returns the borrow.
+ */
+SPECIFIER int FN(subDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *result);
+
+
+/**
  * Multiplies two words together, returns the result in two parts.
  *
  * a, b (in): The two words to multiply.
  * resultHigh, resultLow: The result in two parts.
  */
 SPECIFIER void FN(mulDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *resultHigh, WORD_TYPE *resultLow);
+
 
 /**
  * Adds two big integers together.
@@ -45,7 +57,21 @@ SPECIFIER void FN(mulDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *resultHigh, WOR
  *
  * The output can be one of the inputs.
  */
-SPECIFIER int FN(addBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
+SPECIFIER int FN(addBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n);
+
+
+/**
+ * Subtracts two big integers.
+ *
+ * aWords, bWords (in): The two arrays of words little endian order representing the operands.
+ * result (out): The array of words containing the result.
+ * n (in): The number of words in each of the arrays.
+ *
+ * Returns the borrow.
+ *
+ * The output can be one of the inputs.
+ */
+SPECIFIER int FN(subBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n);
 
 /**
  * Adds big integers whose lengths differ.
@@ -86,6 +112,13 @@ SPECIFIER int FN(addDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *result)
 {
     *result = a + b;
     return *result < a;
+}
+
+
+SPECIFIER int FN(subDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *result)
+{
+    *result = a - b;
+    return *result > a;
 }
 
 
@@ -132,6 +165,25 @@ SPECIFIER int FN(addBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *res
     }
 
     return carry;
+}
+
+
+SPECIFIER int FN(subBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
+{
+    size_t i;
+    int borrow = 0;
+    WORD_TYPE r;
+    WORD_TYPE s;
+
+    for (i = 0; i < n; i++)
+    {
+        s = borrow;
+        borrow = FN(subDigit)(aWords[i], bWords[i], &r);
+        result[i] = r - s;
+        if (result[i] > r) borrow = 1;
+    }
+
+    return borrow;
 }
 
 

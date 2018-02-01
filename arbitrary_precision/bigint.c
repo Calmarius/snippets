@@ -1,10 +1,11 @@
 #ifdef UNIT_TEST
 
-#include <stdint.h>
+#include <inttypes.h>
 #include <assert.h>
 
 #define WORD_TYPE uint32_t
 #define HALF_WORD_BITS 16
+#define DECLARE_STUFF
 #define DEFINE_STUFF
 #include "bigint.h"
 
@@ -93,6 +94,34 @@ int main()
         assert(C[6] == 0x83fa2782);
         assert(C[7] == 0x09a0cd05);
     }
+    {
+        uint32_t A[4] = {0xFFFFFFFE, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
+        uint32_t B[4] = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
+        uint32_t C[4];
+        int borrow;
+
+        borrow = subBigint(A, B, C, 4);
+
+        assert(C[0] == 0xFFFFFFFF);
+        assert(C[1] == 0xFFFFFFFF);
+        assert(C[2] == 0xFFFFFFFF);
+        assert(C[3] == 0xFFFFFFFF);
+        assert(borrow == 1);
+    }
+    {
+        uint32_t A[4] = {0x12345678, 0x12345678, 0x12345678, 0x12345678};
+        uint32_t B[4] = {0x87654321, 0x87654321, 0x87654321, 0x87654321};
+        int borrow;
+
+        borrow = subBigint(A, B, A, 4);
+
+        assert(A[0] == 0x8ACF1357);
+        assert(A[1] == 0x8ACF1356);
+        assert(A[2] == 0x8ACF1356);
+        assert(A[3] == 0x8ACF1356);
+        assert(borrow == 1);
+    }
+
 
     printf("ALL is OK!\n");
 }
