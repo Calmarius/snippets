@@ -6,9 +6,11 @@
     #error Please define WORD_TYPE to the largest unsigned type your CPU natively supports.
 #endif
 
-#ifndef HALF_WORD_BITS
-    #error Please define HALF_WORD_BASE to be the half of the bits of the word.  (Eg. for a 32 bit unsigned integer it should be 16).
+#ifndef WORD_BITS
+    #error Please define WORD_BITS to be the bits of the word.  (Eg. for a 32 bit unsigned integer it should be 32).
 #endif
+
+#define HALF_WORD_BITS (WORD_BITS / 2)
 
 #define HALF_WORD_BASE (1 << HALF_WORD_BITS)
 
@@ -101,6 +103,28 @@ SPECIFIER int FN(addBigintEx)(
  * n (in): The number of words in each array.
  */
 SPECIFIER void FN(mulBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n);
+
+
+/**
+ * Shifts big integer left.
+ *
+ * in (in): The input big integer.
+ * out (out): The output big integer.
+ * n (in): The number of words in the argument.
+ * shiftAmount (in): The amount to shift.
+ */
+SPECIFIER void FN(shlBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount);
+
+
+/**
+ * Shifts big integer right.
+ *
+ * in (in): The input big integer.
+ * out (out): The output big integer.
+ * n (in): The number of words in the argument.
+ * shiftAmount (in): The amount to shift.
+ */
+SPECIFIER void FN(shrBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount);
 
 
 
@@ -236,14 +260,47 @@ SPECIFIER void FN(mulBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *re
             FN(addBigintEx)(result + k, 2*n - k, tmp, 2, result + k);
         }
     }
-
 }
+
+
+SPECIFIER void FN(shlBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount)
+{
+    size_t dIndex = shiftAmount / WORD_BITS;
+    size_t dShift = shiftAmount % WORD_BITS;
+    size_t i;
+
+    if (dShift)
+    {
+        for (i = 0; i < n; i++)
+        {
+            WORD_TYPE newWord = 0;
+            WORD_TYPE part;
+
+            part = i >= dIndex ? in[i - dIndex] : 0;
+            newWord |= part << dShift;
+
+            part = i >= dIndex + 1 ? in[i - dIndex - 1] : 0;
+            newWord |= part >> (WORD_BITS - dShift);
+
+            out[i] = newWord;
+        }
+    }
+    else
+    {
+        for (i = 0; i < n; i++)
+        {
+            out[i] = i >= dIndex ? in[i - dIndex] : 0;
+        }
+    }
+}
+
 
 #endif
 
 
 #include "meta/templatefooter.h"
 #undef WORD_TYPE
+#undef WORD_BITS
 #undef HALF_WORD_BITS
 #undef HALF_WORD_BASE
 #undef HALF_WORD_MASK

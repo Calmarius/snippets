@@ -4,7 +4,7 @@
 #include <assert.h>
 
 #define WORD_TYPE uint32_t
-#define HALF_WORD_BITS 16
+#define WORD_BITS 32
 #define DECLARE_STUFF
 #define DEFINE_STUFF
 #include "bigint.h"
@@ -120,6 +120,52 @@ int main()
         assert(A[2] == 0x8ACF1356);
         assert(A[3] == 0x8ACF1356);
         assert(borrow == 1);
+    }
+    {
+        uint32_t A[4] = {0x12345678, 0x22222222, 0x33333333, 0x44444444};
+        uint32_t B[4];
+
+        shlBigint(A, B, 4, 1);
+        assert(B[0] == 0x2468ACF0);
+        assert(B[1] == 0x44444444);
+        assert(B[2] == 0x66666666);
+        assert(B[3] == 0x88888888);
+
+        shlBigint(A, B, 4, 2);
+        assert(B[0] == 0x48D159E0);
+        assert(B[1] == 0x88888888);
+        assert(B[2] == 0xCCCCCCCC);
+        assert(B[3] == 0x11111110);
+
+        shlBigint(A, B, 4, 3);
+        assert(B[0] == 0x91A2B3C0);
+        assert(B[1] == 0x11111110);
+        assert(B[2] == 0x99999999);
+        assert(B[3] == 0x22222221);
+
+        shlBigint(A, B, 4, 4);
+        assert(B[0] == 0x23456780);
+        assert(B[1] == 0x22222221);
+        assert(B[2] == 0x33333332);
+        assert(B[3] == 0x44444443);
+
+        shlBigint(A, B, 4, 16);
+        assert(B[0] == 0x56780000);
+        assert(B[1] == 0x22221234);
+        assert(B[2] == 0x33332222);
+        assert(B[3] == 0x44443333);
+
+        shlBigint(A, B, 4, 32);
+        assert(B[0] == 0x00000000);
+        assert(B[1] == 0x12345678);
+        assert(B[2] == 0x22222222);
+        assert(B[3] == 0x33333333);
+
+        shlBigint(A, B, 4, 48);
+        assert(B[0] == 0x00000000);
+        assert(B[1] == 0x56780000);
+        assert(B[2] == 0x22221234);
+        assert(B[3] == 0x33332222);
     }
 
 
