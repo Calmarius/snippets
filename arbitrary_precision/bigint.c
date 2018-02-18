@@ -213,9 +213,31 @@ int main()
         assert(B[2] == 0x00004444);
         assert(B[3] == 0x00000000);
     }
+    {
+        uint32_t A[4] = {0x12345678, 0x9ABCDEF0, 0x0FEDCBA9, 0x87654321};
+        uint32_t B[4] = {0xCCCCCCCC, 0x33333333, 0x55555555, 0xAAAAAAAA};
+        uint32_t C[4];
 
+        andBigint(A, B, C, 4);
+        assert(C[0] == 0x00044448);
+        assert(C[1] == 0x12301230);
+        assert(C[2] == 0x05454101);
+        assert(C[3] == 0x82200220);
 
-    printf("ALL is OK!\n");
+        orBigint(A, B, C, 4);
+        assert(C[0] == 0xDEFCDEFC);
+        assert(C[1] == 0xBBBFFFF3);
+        assert(C[2] == 0x5FFDDFFD);
+        assert(C[3] == 0xAFEFEBAB);
+
+        xorBigint(A, B, C, 4);
+        assert(C[0] == 0xDEF89AB4);
+        assert(C[1] == 0xA98FEDC3);
+        assert(C[2] == 0x5AB89EFC);
+        assert(C[3] == 0x2DCFE98B);
+    }
+
+    printf("ALL is OK! %s %s\n", __DATE__, __TIME__);
 }
 
 #endif

@@ -117,7 +117,7 @@ SPECIFIER void FN(shlBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned s
 
 
 /**
- * Shifts big integer right.
+ * Shifts big integer right. It's not sign preserving.
  *
  * in (in): The input big integer.
  * out (out): The output big integer.
@@ -127,6 +127,34 @@ SPECIFIER void FN(shlBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned s
 SPECIFIER void FN(shrBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount);
 
 
+/**
+ * Bitwise AND of two big integers.
+ *
+ * in1, in2 (in): The two arguments.
+ * out (out): The result.
+ * n (in): The number of word in each arguments.
+ */
+SPECIFIER void FN(andBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n);
+
+
+/**
+ * Bitwise OR of two big integers.
+ *
+ * in1, in2 (in): The two arguments.
+ * out (out): The result.
+ * n (in): The number of word in each arguments.
+ */
+SPECIFIER void FN(orBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n);
+
+
+/**
+ * Bitwise XOR of two big integers.
+ *
+ * in1, in2 (in): The two arguments.
+ * out (out): The result.
+ * n (in): The number of word in each arguments.
+ */
+SPECIFIER void FN(xorBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n);
 
 #endif
 
@@ -325,6 +353,39 @@ SPECIFIER void FN(shrBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned s
         {
             out[i] = i + dIndex < n ? in[i + dIndex] : 0;
         }
+    }
+}
+
+
+SPECIFIER void FN(andBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n)
+{
+    size_t i;
+
+    for (i = 0; i < n; i++)
+    {
+        out[i] = in1[i] & in2[i];
+    }
+}
+
+
+SPECIFIER void FN(orBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n)
+{
+    size_t i;
+
+    for (i = 0; i < n; i++)
+    {
+        out[i] = in1[i] | in2[i];
+    }
+}
+
+
+SPECIFIER void FN(xorBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n)
+{
+    size_t i;
+
+    for (i = 0; i < n; i++)
+    {
+        out[i] = in1[i] ^ in2[i];
     }
 }
 
