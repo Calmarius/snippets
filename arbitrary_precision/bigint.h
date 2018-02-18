@@ -287,9 +287,43 @@ SPECIFIER void FN(shlBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned s
     }
     else
     {
+        /* Zero shift case can be simplified. Also we cam avoid out of range shifts. */
         for (i = 0; i < n; i++)
         {
             out[i] = i >= dIndex ? in[i - dIndex] : 0;
+        }
+    }
+}
+
+
+SPECIFIER void FN(shrBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount)
+{
+    size_t dIndex = shiftAmount / WORD_BITS;
+    size_t dShift = shiftAmount % WORD_BITS;
+    size_t i;
+
+    if (dShift)
+    {
+        for (i = 0; i < n; i++)
+        {
+            WORD_TYPE newWord = 0;
+            WORD_TYPE part;
+
+            part = i + dIndex < n ? in[i + dIndex] : 0;
+            newWord |= part >> dShift;
+
+            part = i + dIndex + 1 < n ? in[i + dIndex + 1] : 0;
+            newWord |= part << (WORD_BITS - dShift);
+
+            out[i] = newWord;
+        }
+    }
+    else
+    {
+        /* Zero shift case can be simplified. Also we cam avoid out of range shifts. */
+        for (i = 0; i < n; i++)
+        {
+            out[i] = i + dIndex < n ? in[i + dIndex] : 0;
         }
     }
 }

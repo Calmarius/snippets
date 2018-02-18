@@ -167,6 +167,52 @@ int main()
         assert(B[2] == 0x22221234);
         assert(B[3] == 0x33332222);
     }
+    {
+        uint32_t A[4] = {0x12345678, 0x22222222, 0x33333333, 0x44444444};
+        uint32_t B[4];
+
+        shrBigint(A, B, 4, 1);
+        assert(B[0] == 0x091A2B3C);
+        assert(B[1] == 0x91111111);
+        assert(B[2] == 0x19999999);
+        assert(B[3] == 0x22222222);
+
+        shrBigint(A, B, 4, 2);
+        assert(B[0] == 0x848D159E);
+        assert(B[1] == 0xC8888888);
+        assert(B[2] == 0x0CCCCCCC);
+        assert(B[3] == 0x11111111);
+
+        shrBigint(A, B, 4, 3);
+        assert(B[0] == 0x42468ACF);
+        assert(B[1] == 0x64444444);
+        assert(B[2] == 0x86666666);
+        assert(B[3] == 0x08888888);
+
+        shrBigint(A, B, 4, 4);
+        assert(B[0] == 0x21234567);
+        assert(B[1] == 0x32222222);
+        assert(B[2] == 0x43333333);
+        assert(B[3] == 0x04444444);
+
+        shrBigint(A, B, 4, 16);
+        assert(B[0] == 0x22221234);
+        assert(B[1] == 0x33332222);
+        assert(B[2] == 0x44443333);
+        assert(B[3] == 0x00004444);
+
+        shrBigint(A, B, 4, 32);
+        assert(B[0] == 0x22222222);
+        assert(B[1] == 0x33333333);
+        assert(B[2] == 0x44444444);
+        assert(B[3] == 0x00000000);
+
+        shrBigint(A, B, 4, 48);
+        assert(B[0] == 0x33332222);
+        assert(B[1] == 0x44443333);
+        assert(B[2] == 0x00004444);
+        assert(B[3] == 0x00000000);
+    }
 
 
     printf("ALL is OK!\n");
