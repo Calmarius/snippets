@@ -236,6 +236,20 @@ int main()
         assert(C[2] == 0x5AB89EFC);
         assert(C[3] == 0x2DCFE98B);
     }
+    {
+        uint32_t ref[4] = {0x43573457, 0x98486223, 0x98236815, 0x99913852};
+        uint32_t less[4] = {0x43573457, 0x98486223, 0x88236815, 0x99913852};
+        uint32_t greater[4] = {0x43573458, 0x98486223, 0x98236815, 0x99913852};
+
+        assert(lessThanBigint(less, ref, 4));
+        assert(!lessThanBigint(greater, ref, 4));
+        assert(!lessThanBigint(ref, ref, 4));
+
+        assert(!equalBigint(less, ref, 4));
+        assert(!equalBigint(greater, ref, 4));
+        assert(equalBigint(ref, ref, 4));
+
+    }
 
     printf("ALL is OK! %s %s\n", __DATE__, __TIME__);
 }

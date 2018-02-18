@@ -112,6 +112,8 @@ SPECIFIER void FN(mulBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *re
  * out (out): The output big integer.
  * n (in): The number of words in the argument.
  * shiftAmount (in): The amount to shift.
+ *
+ * Words in little endian order.
  */
 SPECIFIER void FN(shlBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount);
 
@@ -123,6 +125,8 @@ SPECIFIER void FN(shlBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned s
  * out (out): The output big integer.
  * n (in): The number of words in the argument.
  * shiftAmount (in): The amount to shift.
+ *
+ * Words in little endian order.
  */
 SPECIFIER void FN(shrBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount);
 
@@ -133,6 +137,8 @@ SPECIFIER void FN(shrBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned s
  * in1, in2 (in): The two arguments.
  * out (out): The result.
  * n (in): The number of word in each arguments.
+ *
+ * Words in little endian order.
  */
 SPECIFIER void FN(andBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n);
 
@@ -143,6 +149,9 @@ SPECIFIER void FN(andBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, siz
  * in1, in2 (in): The two arguments.
  * out (out): The result.
  * n (in): The number of word in each arguments.
+ *
+ *
+ * Words in little endian order.
  */
 SPECIFIER void FN(orBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n);
 
@@ -152,9 +161,56 @@ SPECIFIER void FN(orBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size
  *
  * in1, in2 (in): The two arguments.
  * out (out): The result.
- * n (in): The number of word in each arguments.
+ * n (in): The number of words in each argument.
+ *
+ * Words in little endian order.
  */
 SPECIFIER void FN(xorBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n);
+
+
+/**
+ * Compares two bigints.
+ *
+ * a, b (in): The two numbers to compare.
+ * n (in): The number of words in each argument.
+ *
+ * Returns non-zero if 'a' is less than 'b'.
+ *
+ * Words in little endian order.
+ */
+SPECIFIER int FN(lessThanBigint)(WORD_TYPE *a, WORD_TYPE *b, size_t n);
+
+
+/**
+ * Compares two bigints.
+ *
+ * a, b (in): The two numbers to compare.
+ * n (in): The number of words in each argument.
+ *
+ * Returns non-zero if 'a' equals 'b'.
+ *
+ * Words in little endian order.
+ */
+SPECIFIER int FN(equalBigint)(WORD_TYPE *a, WORD_TYPE *b, size_t n);
+
+
+/**
+ * Bigint long division algorithm.
+ *
+ * dividend, divisor (in): as their name suggests...
+ * quotient, remainder (out): as their name suggests...
+ *
+ * Returns 0 on success, 1 on error (division by zero).
+ *
+ * Words in little endian order.
+ */
+SPECIFIER int FN(divModBigint)(
+    WORD_TYPE *dividend,
+    WORD_TYPE *divisor,
+    WORD_TYPE *quotient,
+    WORD_TYPE *remainder,
+    size_t n
+);
 
 #endif
 
@@ -388,6 +444,27 @@ SPECIFIER void FN(xorBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, siz
         out[i] = in1[i] ^ in2[i];
     }
 }
+
+
+SPECIFIER int FN(lessThanBigint)(WORD_TYPE *a, WORD_TYPE *b, size_t n)
+{
+    while (n --> 0)
+    {
+        if (a[n] < b[n]) return 1;
+    }
+    return 0;
+}
+
+
+SPECIFIER int FN(equalBigint)(WORD_TYPE *a, WORD_TYPE *b, size_t n)
+{
+    while (n --> 0)
+    {
+        if (a[n] != b[n]) return 0;
+    }
+    return 1;
+}
+
 
 
 #endif
