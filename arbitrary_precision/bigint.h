@@ -59,7 +59,7 @@ SPECIFIER void FN(mulDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *resultHigh, WOR
  *
  * The output can be one of the inputs.
  */
-SPECIFIER int FN(addBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n);
+SPECIFIER int FN(addBigint)(const WORD_TYPE *aWords, const WORD_TYPE *bWords, WORD_TYPE *result, size_t n);
 
 
 /**
@@ -73,7 +73,7 @@ SPECIFIER int FN(addBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *res
  *
  * The output can be one of the inputs.
  */
-SPECIFIER int FN(subBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n);
+SPECIFIER int FN(subBigint)(const WORD_TYPE *aWords, const WORD_TYPE *bWords, WORD_TYPE *result, size_t n);
 
 /**
  * Adds big integers whose lengths differ.
@@ -87,9 +87,9 @@ SPECIFIER int FN(subBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *res
  * The output can be the longer input.
  */
 SPECIFIER int FN(addBigintEx)(
-    WORD_TYPE *aWords,
+    const WORD_TYPE *aWords,
     size_t nA,
-    WORD_TYPE *bWords,
+    const WORD_TYPE *bWords,
     size_t nB,
     WORD_TYPE *result);
 
@@ -102,7 +102,7 @@ SPECIFIER int FN(addBigintEx)(
  *      This array must be able to contain twice as many words as the two arguemnts.
  * n (in): The number of words in each array.
  */
-SPECIFIER void FN(mulBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n);
+SPECIFIER void FN(mulBigint)(const WORD_TYPE *aWords, const WORD_TYPE *bWords, WORD_TYPE *result, size_t n);
 
 
 /**
@@ -114,8 +114,9 @@ SPECIFIER void FN(mulBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *re
  * shiftAmount (in): The amount to shift.
  *
  * Words in little endian order.
+ * The output can be the same as input.
  */
-SPECIFIER void FN(shlBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount);
+SPECIFIER void FN(shlBigint)(const WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount);
 
 
 /**
@@ -127,8 +128,9 @@ SPECIFIER void FN(shlBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned s
  * shiftAmount (in): The amount to shift.
  *
  * Words in little endian order.
+ * The output can be the same as input.
  */
-SPECIFIER void FN(shrBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount);
+SPECIFIER void FN(shrBigint)(const WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount);
 
 
 /**
@@ -140,7 +142,7 @@ SPECIFIER void FN(shrBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned s
  *
  * Words in little endian order.
  */
-SPECIFIER void FN(andBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n);
+SPECIFIER void FN(andBigint)(const WORD_TYPE *in1, const WORD_TYPE *in2, WORD_TYPE *out, size_t n);
 
 
 /**
@@ -153,7 +155,7 @@ SPECIFIER void FN(andBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, siz
  *
  * Words in little endian order.
  */
-SPECIFIER void FN(orBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n);
+SPECIFIER void FN(orBigint)(const WORD_TYPE *in1, const WORD_TYPE *in2, WORD_TYPE *out, size_t n);
 
 
 /**
@@ -165,7 +167,7 @@ SPECIFIER void FN(orBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size
  *
  * Words in little endian order.
  */
-SPECIFIER void FN(xorBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n);
+SPECIFIER void FN(xorBigint)(const WORD_TYPE *in1, const WORD_TYPE *in2, WORD_TYPE *out, size_t n);
 
 
 /**
@@ -178,7 +180,7 @@ SPECIFIER void FN(xorBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, siz
  *
  * Words in little endian order.
  */
-SPECIFIER int FN(lessThanBigint)(WORD_TYPE *a, WORD_TYPE *b, size_t n);
+SPECIFIER int FN(lessThanBigint)(const WORD_TYPE *a, const WORD_TYPE *b, size_t n);
 
 
 /**
@@ -191,7 +193,7 @@ SPECIFIER int FN(lessThanBigint)(WORD_TYPE *a, WORD_TYPE *b, size_t n);
  *
  * Words in little endian order.
  */
-SPECIFIER int FN(equalBigint)(WORD_TYPE *a, WORD_TYPE *b, size_t n);
+SPECIFIER int FN(equalBigint)(const WORD_TYPE *a, const WORD_TYPE *b, size_t n);
 
 
 /**
@@ -200,13 +202,13 @@ SPECIFIER int FN(equalBigint)(WORD_TYPE *a, WORD_TYPE *b, size_t n);
  * dividend, divisor (in): as their name suggests...
  * quotient, remainder (out): as their name suggests...
  *
- * Returns 0 on success, 1 on error (division by zero).
- *
  * Words in little endian order.
+ *
+ * Zero division is indicated by remainder == dividend and quotient == all 1 bits.
  */
-SPECIFIER int FN(divModBigint)(
-    WORD_TYPE *dividend,
-    WORD_TYPE *divisor,
+SPECIFIER void FN(divModBigint)(
+    const WORD_TYPE *dividend,
+    const WORD_TYPE *divisor,
     WORD_TYPE *quotient,
     WORD_TYPE *remainder,
     size_t n
@@ -257,7 +259,7 @@ SPECIFIER void FN(mulDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *resultHigh, WOR
 }
 
 
-SPECIFIER int FN(addBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
+SPECIFIER int FN(addBigint)(const WORD_TYPE *aWords, const WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
 {
     size_t i;
     int carry = 0;
@@ -276,7 +278,7 @@ SPECIFIER int FN(addBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *res
 }
 
 
-SPECIFIER int FN(subBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
+SPECIFIER int FN(subBigint)(const WORD_TYPE *aWords, const WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
 {
     size_t i;
     int borrow = 0;
@@ -296,9 +298,9 @@ SPECIFIER int FN(subBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *res
 
 
 SPECIFIER int FN(addBigintEx)(
-    WORD_TYPE *aWords,
+    const WORD_TYPE *aWords,
     size_t nA,
-    WORD_TYPE *bWords,
+    const WORD_TYPE *bWords,
     size_t nB,
     WORD_TYPE *result)
 {
@@ -323,7 +325,7 @@ SPECIFIER int FN(addBigintEx)(
     return carry;
 }
 
-SPECIFIER void FN(mulBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
+SPECIFIER void FN(mulBigint)(const WORD_TYPE *aWords, const WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
 {
     size_t i, j, k;
     WORD_TYPE tmp[2];
@@ -347,15 +349,15 @@ SPECIFIER void FN(mulBigint)(WORD_TYPE *aWords, WORD_TYPE *bWords, WORD_TYPE *re
 }
 
 
-SPECIFIER void FN(shlBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount)
+SPECIFIER void FN(shlBigint)(const WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount)
 {
     size_t dIndex = shiftAmount / WORD_BITS;
     size_t dShift = shiftAmount % WORD_BITS;
-    size_t i;
+    size_t i = n;
 
     if (dShift)
     {
-        for (i = 0; i < n; i++)
+        while (i --> 0)
         {
             WORD_TYPE newWord = 0;
             WORD_TYPE part;
@@ -372,7 +374,7 @@ SPECIFIER void FN(shlBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned s
     else
     {
         /* Zero shift case can be simplified. Also we cam avoid out of range shifts. */
-        for (i = 0; i < n; i++)
+        while (i --> 0)
         {
             out[i] = i >= dIndex ? in[i - dIndex] : 0;
         }
@@ -380,7 +382,7 @@ SPECIFIER void FN(shlBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned s
 }
 
 
-SPECIFIER void FN(shrBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount)
+SPECIFIER void FN(shrBigint)(const WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned shiftAmount)
 {
     size_t dIndex = shiftAmount / WORD_BITS;
     size_t dShift = shiftAmount % WORD_BITS;
@@ -413,7 +415,7 @@ SPECIFIER void FN(shrBigint)(WORD_TYPE *in, WORD_TYPE *out, size_t n, unsigned s
 }
 
 
-SPECIFIER void FN(andBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n)
+SPECIFIER void FN(andBigint)(const WORD_TYPE *in1, const WORD_TYPE *in2, WORD_TYPE *out, size_t n)
 {
     size_t i;
 
@@ -424,7 +426,7 @@ SPECIFIER void FN(andBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, siz
 }
 
 
-SPECIFIER void FN(orBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n)
+SPECIFIER void FN(orBigint)(const WORD_TYPE *in1, const WORD_TYPE *in2, WORD_TYPE *out, size_t n)
 {
     size_t i;
 
@@ -435,7 +437,7 @@ SPECIFIER void FN(orBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size
 }
 
 
-SPECIFIER void FN(xorBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, size_t n)
+SPECIFIER void FN(xorBigint)(const WORD_TYPE *in1, const WORD_TYPE *in2, WORD_TYPE *out, size_t n)
 {
     size_t i;
 
@@ -446,7 +448,7 @@ SPECIFIER void FN(xorBigint)(WORD_TYPE *in1, WORD_TYPE *in2, WORD_TYPE *out, siz
 }
 
 
-SPECIFIER int FN(lessThanBigint)(WORD_TYPE *a, WORD_TYPE *b, size_t n)
+SPECIFIER int FN(lessThanBigint)(const WORD_TYPE *a, const WORD_TYPE *b, size_t n)
 {
     while (n --> 0)
     {
@@ -456,7 +458,7 @@ SPECIFIER int FN(lessThanBigint)(WORD_TYPE *a, WORD_TYPE *b, size_t n)
 }
 
 
-SPECIFIER int FN(equalBigint)(WORD_TYPE *a, WORD_TYPE *b, size_t n)
+SPECIFIER int FN(equalBigint)(const WORD_TYPE *a, const WORD_TYPE *b, size_t n)
 {
     while (n --> 0)
     {
@@ -464,6 +466,51 @@ SPECIFIER int FN(equalBigint)(WORD_TYPE *a, WORD_TYPE *b, size_t n)
     }
     return 1;
 }
+
+
+#include <stdio.h>
+
+
+SPECIFIER void FN(divModBigint)(
+    const WORD_TYPE *dividend,
+    const WORD_TYPE *divisor,
+    WORD_TYPE *quotient,
+    WORD_TYPE *remainder,
+    size_t n
+)
+{
+    size_t i;
+
+    i = 0;
+    for (i = 0; i < n; i++)
+    {
+        quotient[i] = 0;
+        remainder[i] = 0;
+    }
+
+    i = n;
+
+    while (i --> 0)
+    {
+        size_t j = WORD_BITS;
+
+        while (j --> 0)
+        {
+
+            /* Shift in the next digit of the dividend. */
+            shlBigint(remainder, remainder, n, 1);
+            remainder[0] |= !!(dividend[i] & (1 << j));
+
+            /* Check if we can add one to the output. */
+            if (!lessThanBigint(remainder, divisor, n))
+            {
+                quotient[i] |= 1 << j;
+                subBigint(remainder, divisor, remainder, n);
+            }
+        }
+    }
+}
+
 
 
 

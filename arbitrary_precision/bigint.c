@@ -166,6 +166,13 @@ int main()
         assert(B[1] == 0x56780000);
         assert(B[2] == 0x22221234);
         assert(B[3] == 0x33332222);
+
+        /* Test self shift */
+        shlBigint(A, A, 4, 16);
+        assert(A[0] == 0x56780000);
+        assert(A[1] == 0x22221234);
+        assert(A[2] == 0x33332222);
+        assert(A[3] == 0x44443333);
     }
     {
         uint32_t A[4] = {0x12345678, 0x22222222, 0x33333333, 0x44444444};
@@ -212,6 +219,14 @@ int main()
         assert(B[1] == 0x44443333);
         assert(B[2] == 0x00004444);
         assert(B[3] == 0x00000000);
+
+        /* Test self shift */
+        shrBigint(A, A, 4, 16);
+        assert(A[0] == 0x22221234);
+        assert(A[1] == 0x33332222);
+        assert(A[2] == 0x44443333);
+        assert(A[3] == 0x00004444);
+
     }
     {
         uint32_t A[4] = {0x12345678, 0x9ABCDEF0, 0x0FEDCBA9, 0x87654321};
@@ -248,7 +263,24 @@ int main()
         assert(!equalBigint(less, ref, 4));
         assert(!equalBigint(greater, ref, 4));
         assert(equalBigint(ref, ref, 4));
+    }
+    {
+        uint32_t dividend[4] = {0x12345678, 0x9ABCDEF0, 0xCCCCCCCC, 0xDDDDDDDD};
+        uint32_t divisor[4] = {0x77777777, 0x88888888, 0x00000000, 0x00000000};
+        uint32_t quotient[4];
+        uint32_t remainder[4];
 
+        divModBigint(dividend, divisor, quotient, remainder, 4);
+
+        assert(quotient[0] == 0x14000001);
+        assert(quotient[1] == 0xA0000000);
+        assert(quotient[2] == 0x00000001);
+        assert(quotient[3] == 0x00000000);
+
+        assert(remainder[0] == 0x4EBCDF01);
+        assert(remainder[1] == 0x08DF0112);
+        assert(remainder[2] == 0x00000000);
+        assert(remainder[3] == 0x00000000);
     }
 
     printf("ALL is OK! %s %s\n", __DATE__, __TIME__);
