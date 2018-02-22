@@ -1,3 +1,7 @@
+/**
+ * Basic arithmetic operations and various theory functions on arbitrary precision integers.
+ */
+
 #include "meta/templateheader.h"
 
 #include <stddef.h>
@@ -8,6 +12,31 @@
 
 #ifndef WORD_BITS
     #error Please define WORD_BITS to be the bits of the word.  (Eg. for a 32 bit unsigned integer it should be 32).
+#endif
+
+#ifndef BIGINT_TYPE
+    /* It must be a value type. It shouldn't be a handle. */
+    #error Please defined BIGINT_TYPE to be the type that represents a big integer.
+#endif
+
+#ifndef BIGINT_GETWORD
+    /* Example: #define BIGINT_GETWORD(bi, i) ((bi).words[i]) */
+    #error Please define BIGINT_GETWORD to be able to read a word in the bigint.
+#endif
+
+#ifndef BIGINT_SETWORD
+    /* Example: #define BIGINT_SETWORD(bi, i, word) ((bi).words[i] = (word)) */
+    #error Please define BIGINT_SETWORD to be able to set a word in the bigint.
+#endif
+
+#ifndef BIGINT_GETNWORDS
+    /* Example: #define BIGINT_GETNWORDS(bi) (bi.nWords) */
+    #error Please define BIGINT_GETNWORDS to be the macro the queries the number of words in a bigint.
+#endif
+
+#ifndef BIGINT_SETNWORDS
+    /* Example: #define BIGINT_SETNWORDS(bi, n) ((bi).nWords = (n)) */
+    #error Please define BIGINT_SETNWORDS to be the macro the set the number of words in a bigint.
 #endif
 
 #define HALF_WORD_BITS (WORD_BITS / 2)
@@ -50,30 +79,27 @@ SPECIFIER void FN(mulDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *resultHigh, WOR
 /**
  * Adds two big integers together.
  *
- * aWords (in): The words in the first number in little endian order.
- * bWords (in): The words in the second number in little endian order.
- * result (out): The result words in little endian order.
- * n (in): The number of words in each of these numbers.
+ * a,b (in): The two bigints to add.
+ * result (out): The result, the number of the words in the result is the number of the words in the longer input (that has more words)
+ *
+ * The function works correctly if the output matches one of its inputs.
  *
  * Returns the carry.
- *
- * The output can be one of the inputs.
- */
-SPECIFIER int FN(addBigint)(const WORD_TYPE *aWords, const WORD_TYPE *bWords, WORD_TYPE *result, size_t n);
+ **/
+SPECIFIER int FN(addBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result);
 
 
 /**
  * Subtracts two big integers.
  *
- * aWords, bWords (in): The two arrays of words little endian order representing the operands.
- * result (out): The array of words containing the result.
- * n (in): The number of words in each of the arrays.
+ * a,b (in): The two bigints to subtract (a-b) will be calculated.
+ * result (out): The result, the number of the words in the result is the number of the words in the longer input (that has more words)
+ *
+ * The function works correctly if the output matches one of its inputs.
  *
  * Returns the borrow.
- *
- * The output can be one of the inputs.
- */
-SPECIFIER int FN(subBigint)(const WORD_TYPE *aWords, const WORD_TYPE *bWords, WORD_TYPE *result, size_t n);
+ **/
+SPECIFIER int FN(subBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result);
 
 /**
  * Adds big integers whose lengths differ.
@@ -200,7 +226,8 @@ SPECIFIER int FN(equalBigint)(const WORD_TYPE *a, const WORD_TYPE *b, size_t n);
  * Bigint long division algorithm.
  *
  * dividend, divisor (in): as their name suggests...
- * quotient, remainder (out): as their name suggests...
+ * quotient (opt), remainder (out): as their name suggests... The quotient can be NULL if only the modulus is needed.
+ *
  *
  * Words in little endian order.
  *
@@ -213,6 +240,10 @@ SPECIFIER void FN(divModBigint)(
     WORD_TYPE *remainder,
     size_t n
 );
+
+#ifdef NUM_THEORY
+#endif
+
 
 #endif
 
@@ -259,38 +290,57 @@ SPECIFIER void FN(mulDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *resultHigh, WOR
 }
 
 
-SPECIFIER int FN(addBigint)(const WORD_TYPE *aWords, const WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
+SPECIFIER int FN(addBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result)
 {
     size_t i;
     int carry = 0;
     WORD_TYPE r;
     WORD_TYPE s;
+    size_t nA = BIGINT_GETNWORDS(*a);
+    size_t nB = BIGINT_GETNWORDS(*b);
+    size_t n = nA > nB ? nA : nB;
+
+    BIGINT_SETNWORDS(*result, n);
 
     for (i = 0; i < n; i++)
     {
+        WORD_TYPE aWord = i < nA ? BIGINT_GETWORD(*a, i) : 0;
+        WORD_TYPE bWord = i < nB ? BIGINT_GETWORD(*b, i) : 0;
+        WORD_TYPE rWord;
+
         s = carry;
-        carry = FN(addDigit)(aWords[i], bWords[i], &r);
-        result[i] = s + r;
-        if (result[i] < s) carry = 1;
+        carry = FN(addDigit)(aWord, bWord, &r);
+        rWord = s + r;
+        if (rWord < s) carry = 1;
+        BIGINT_SETWORD(*result, i, rWord);
     }
 
     return carry;
 }
 
 
-SPECIFIER int FN(subBigint)(const WORD_TYPE *aWords, const WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
+SPECIFIER int FN(subBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result)
 {
     size_t i;
     int borrow = 0;
     WORD_TYPE r;
     WORD_TYPE s;
+    size_t nA = BIGINT_GETNWORDS(*a);
+    size_t nB = BIGINT_GETNWORDS(*b);
+    size_t n = nA > nB ? nA : nB;
 
     for (i = 0; i < n; i++)
     {
+        WORD_TYPE aWord = BIGINT_GETWORD(*a, i);
+        WORD_TYPE bWord = BIGINT_GETWORD(*b, i);
+        WORD_TYPE rWord;
+
         s = borrow;
-        borrow = FN(subDigit)(aWords[i], bWords[i], &r);
-        result[i] = r - s;
-        if (result[i] > r) borrow = 1;
+        borrow = FN(subDigit)(aWord, bWord, &r);
+        rWord = r - s;
+        if (rWord > r) borrow = 1;
+
+        BIGINT_SETWORD(*result, i, rWord);
     }
 
     return borrow;
@@ -479,6 +529,12 @@ SPECIFIER void FN(divModBigint)(
     size_t n
 )
 {
+    (void)dividend;
+    (void)divisor;
+    (void)quotient;
+    (void)remainder;
+    (void)n;
+    #if 0
     size_t i;
 
     i = 0;
@@ -509,10 +565,12 @@ SPECIFIER void FN(divModBigint)(
             }
         }
     }
+    #endif
 }
 
 
-
+#ifdef NUM_THEORY
+#endif
 
 #endif
 
@@ -520,9 +578,15 @@ SPECIFIER void FN(divModBigint)(
 #include "meta/templatefooter.h"
 #undef WORD_TYPE
 #undef WORD_BITS
+#undef BIGINT_TYPE
+#undef BIGINT_GETWORD
+#undef BIGINT_SETWORD
+#undef BIGINT_GETNWORDS
+#undef BIGINT_SETNWORDS
 #undef HALF_WORD_BITS
 #undef HALF_WORD_BASE
 #undef HALF_WORD_MASK
 #undef DECLARE_STUFF
 #undef DEFINE_STUFF
+#undef NUM_THEORY
 
