@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <assert.h>
 #include <stddef.h>
+#include <string.h>
 
 #define WORD_COUNT 8
 
@@ -418,8 +419,8 @@ int main()
     {
         BigInt dividend = {{0x12345678, 0x9ABCDEF0, 0xCCCCCCCC, 0xDDDDDDDD}, 4};
         BigInt divisor = {{0x77777777, 0x88888888, 0x00000000, 0x00000000}, 4};
-        BigInt quotient;
-        BigInt remainder;
+        BigInt quotient = {0};
+        BigInt remainder = {0};
 
         divModBigint(&dividend, &divisor, &quotient, &remainder);
 
@@ -428,6 +429,16 @@ int main()
         assert(quotient.words[2] == 0x00000001);
         assert(quotient.words[3] == 0x00000000);
 
+        assert(remainder.words[0] == 0x4EBCDF01);
+        assert(remainder.words[1] == 0x08DF0112);
+        assert(remainder.words[2] == 0x00000000);
+        assert(remainder.words[3] == 0x00000000);
+
+        memset(&quotient, 0, sizeof quotient);
+        memset(&remainder, 0, sizeof remainder);
+
+        /* It should work even if we only want the remainder. */
+        divModBigint(&dividend, &divisor, NULL, &remainder);
         assert(remainder.words[0] == 0x4EBCDF01);
         assert(remainder.words[1] == 0x08DF0112);
         assert(remainder.words[2] == 0x00000000);

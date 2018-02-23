@@ -108,7 +108,7 @@ SPECIFIER int FN(subBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
  * a (in): The first number.
  * b (in): The second number.
  * result (out): The result of the multiplication. Words in little endian order.
- *      This bigint must be able to contain
+ *      The number of the words in the result will be the sum of the number of the words in the two argument.
  *
  * Outputs must not point to the inputs.
  */
@@ -221,6 +221,17 @@ SPECIFIER void FN(divModBigint)(
 );
 
 #ifdef NUM_THEORY
+
+#ifndef COPY_BIGINT
+    /* Example: #define COPY_BIGINT(dst, src) *dst = *src */
+    #error Please define COPY_BIGINT as a means to copy big integers.
+#endif
+
+SPECIFIER void FN(gcdEuclidean)(
+    const BIGINT_TYPE *a,
+    const BIGINT_TYPE *b,
+    BIGINT_TYPE *gcd
+);
 #endif
 
 
@@ -549,9 +560,6 @@ SPECIFIER int FN(equalBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b)
 }
 
 
-#include <stdio.h>
-
-
 SPECIFIER void FN(divModBigint)(
     const BIGINT_TYPE *dividend,
     const BIGINT_TYPE *divisor,
@@ -564,14 +572,20 @@ SPECIFIER void FN(divModBigint)(
     size_t nS = GETNWORDS(divisor);
 
     i = 0;
-    for (i = 0; i < nD; i++)
+    if (quotient)
     {
-        SETWORD(quotient, i, 0);
+        for (i = 0; i < nD; i++)
+        {
+            SETWORD(quotient, i, 0);
+        }
     }
     for (i = 0; i < nS; i++)
     {
         SETWORD(remainder, i, 0);
     }
+
+    if (quotient) {SETNWORDS(quotient, nD);}
+    SETNWORDS(remainder, nS);
 
     i = nD;
 
@@ -582,15 +596,15 @@ SPECIFIER void FN(divModBigint)(
 
         while (j --> 0)
         {
-
             /* Shift in the next digit of the dividend. */
             FN(shlBigint)(remainder, remainder, 1);
             SETWORD(remainder, 0, GETWORD(remainder, 0) | !!(dividendWord & (1 << j)));
 
             /* Check if we can add one to the output. */
+
             if (!FN(lessThanBigint)(remainder, divisor))
             {
-                SETWORD(quotient, i, GETWORD(quotient, i) | (1 << j));
+                if (quotient) SETWORD(quotient, i, GETWORD(quotient, i) | (1 << j));
                 FN(subBigint)(remainder, divisor, remainder);
             }
         }
@@ -599,6 +613,15 @@ SPECIFIER void FN(divModBigint)(
 
 
 #ifdef NUM_THEORY
+SPECIFIER void FN(gcdEuclidean)(
+    const BIGINT_TYPE *a,
+    const BIGINT_TYPE *b,
+    BIGINT_TYPE *gcd
+)
+{
+
+}
+
 #endif
 
 #endif
@@ -615,7 +638,9 @@ SPECIFIER void FN(divModBigint)(
 #undef HALF_WORD_BITS
 #undef HALF_WORD_BASE
 #undef HALF_WORD_MASK
+#undef NUM_THEORY
+#undef COPY_BIGINT
+
 #undef DECLARE_STUFF
 #undef DEFINE_STUFF
-#undef NUM_THEORY
 
