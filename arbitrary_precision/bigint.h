@@ -19,24 +19,24 @@
     #error Please defined BIGINT_TYPE to be the type that represents a big integer.
 #endif
 
-#ifndef BIGINT_GETWORD
-    /* Example: #define BIGINT_GETWORD(bi, i) ((bi).words[i]) */
-    #error Please define BIGINT_GETWORD to be able to read a word in the bigint.
+#ifndef GETWORD
+    /* Example: #define GETWORD(bi, i) ((bi).words[i]) */
+    #error Please define GETWORD to be able to read a word in the bigint.
 #endif
 
-#ifndef BIGINT_SETWORD
-    /* Example: #define BIGINT_SETWORD(bi, i, word) ((bi).words[i] = (word)) */
-    #error Please define BIGINT_SETWORD to be able to set a word in the bigint.
+#ifndef SETWORD
+    /* Example: #define SETWORD(bi, i, word) ((bi).words[i] = (word)) */
+    #error Please define SETWORD to be able to set a word in the bigint.
 #endif
 
-#ifndef BIGINT_GETNWORDS
-    /* Example: #define BIGINT_GETNWORDS(bi) (bi.nWords) */
-    #error Please define BIGINT_GETNWORDS to be the macro the queries the number of words in a bigint.
+#ifndef GETNWORDS
+    /* Example: #define GETNWORDS(bi) (bi.nWords) */
+    #error Please define GETNWORDS to be the macro the queries the number of words in a bigint.
 #endif
 
-#ifndef BIGINT_SETNWORDS
-    /* Example: #define BIGINT_SETNWORDS(bi, n) ((bi).nWords = (n)) */
-    #error Please define BIGINT_SETNWORDS to be the macro the set the number of words in a bigint.
+#ifndef SETNWORDS
+    /* Example: #define SETNWORDS(bi, n) ((bi).nWords = (n)) */
+    #error Please define SETNWORDS to be the macro the set the number of words in a bigint.
 #endif
 
 #define HALF_WORD_BITS (WORD_BITS / 2)
@@ -112,12 +112,12 @@ SPECIFIER int FN(subBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
  *
  * The output can be the longer input.
  */
-SPECIFIER int FN(addBigintEx)(
+/*SPECIFIER int FN(addBigintEx)(
     const WORD_TYPE *aWords,
     size_t nA,
     const WORD_TYPE *bWords,
     size_t nB,
-    WORD_TYPE *result);
+    WORD_TYPE *result);*/
 
 /**
  * Multiplies two big integers.
@@ -128,7 +128,7 @@ SPECIFIER int FN(addBigintEx)(
  *      This array must be able to contain twice as many words as the two arguemnts.
  * n (in): The number of words in each array.
  */
-SPECIFIER void FN(mulBigint)(const WORD_TYPE *aWords, const WORD_TYPE *bWords, WORD_TYPE *result, size_t n);
+SPECIFIER void FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result);
 
 
 /**
@@ -296,23 +296,23 @@ SPECIFIER int FN(addBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
     int carry = 0;
     WORD_TYPE r;
     WORD_TYPE s;
-    size_t nA = BIGINT_GETNWORDS(*a);
-    size_t nB = BIGINT_GETNWORDS(*b);
+    size_t nA = GETNWORDS(*a);
+    size_t nB = GETNWORDS(*b);
     size_t n = nA > nB ? nA : nB;
 
-    BIGINT_SETNWORDS(*result, n);
+    SETNWORDS(*result, n);
 
     for (i = 0; i < n; i++)
     {
-        WORD_TYPE aWord = i < nA ? BIGINT_GETWORD(*a, i) : 0;
-        WORD_TYPE bWord = i < nB ? BIGINT_GETWORD(*b, i) : 0;
+        WORD_TYPE aWord = i < nA ? GETWORD(*a, i) : 0;
+        WORD_TYPE bWord = i < nB ? GETWORD(*b, i) : 0;
         WORD_TYPE rWord;
 
         s = carry;
         carry = FN(addDigit)(aWord, bWord, &r);
         rWord = s + r;
         if (rWord < s) carry = 1;
-        BIGINT_SETWORD(*result, i, rWord);
+        SETWORD(*result, i, rWord);
     }
 
     return carry;
@@ -325,14 +325,16 @@ SPECIFIER int FN(subBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
     int borrow = 0;
     WORD_TYPE r;
     WORD_TYPE s;
-    size_t nA = BIGINT_GETNWORDS(*a);
-    size_t nB = BIGINT_GETNWORDS(*b);
+    size_t nA = GETNWORDS(*a);
+    size_t nB = GETNWORDS(*b);
     size_t n = nA > nB ? nA : nB;
+
+    SETNWORDS(*result, n);
 
     for (i = 0; i < n; i++)
     {
-        WORD_TYPE aWord = BIGINT_GETWORD(*a, i);
-        WORD_TYPE bWord = BIGINT_GETWORD(*b, i);
+        WORD_TYPE aWord = GETWORD(*a, i);
+        WORD_TYPE bWord = GETWORD(*b, i);
         WORD_TYPE rWord;
 
         s = borrow;
@@ -340,60 +342,59 @@ SPECIFIER int FN(subBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
         rWord = r - s;
         if (rWord > r) borrow = 1;
 
-        BIGINT_SETWORD(*result, i, rWord);
+        SETWORD(*result, i, rWord);
     }
 
     return borrow;
 }
 
 
-SPECIFIER int FN(addBigintEx)(
-    const WORD_TYPE *aWords,
-    size_t nA,
-    const WORD_TYPE *bWords,
-    size_t nB,
-    WORD_TYPE *result)
-{
-    size_t i;
-    int carry = 0;
-    size_t n = nA > nB ? nA : nB;
-    WORD_TYPE r;
-    WORD_TYPE s;
-    WORD_TYPE a;
-    WORD_TYPE b;
-
-    for (i = 0; i < n; i++)
-    {
-        s = carry;
-        a = i >= nA ? 0 : aWords[i];
-        b = i >= nB ? 0 : bWords[i];
-        carry = FN(addDigit)(a, b, &r);
-        result[i] = s + r;
-        if (result[i] < s) carry = 1;
-    }
-
-    return carry;
-}
-
-SPECIFIER void FN(mulBigint)(const WORD_TYPE *aWords, const WORD_TYPE *bWords, WORD_TYPE *result, size_t n)
+SPECIFIER void FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result)
 {
     size_t i, j, k;
-    WORD_TYPE tmp[2];
+    size_t nA = GETNWORDS(*a);
+    size_t nB = GETNWORDS(*b);
+    size_t nR = nA + nB;
 
-    for (k = 0; k < 2*n; k++)
+    for (k = 0; k < nR; k++)
     {
-        result[k] = 0;
+        SETWORD(*result, k, 0);
     }
 
+    SETNWORDS(*result, nR);
+
     /* long multiplication algorithm. */
-    for (i = 0; i < n; i++)
+    for (i = 0; i < nA; i++)
     {
-        for (j = 0; j < n; j++)
+        for (j = 0; j < nB; j++)
         {
             size_t k = i + j;
+            WORD_TYPE aWord = GETWORD(*a, i);
+            WORD_TYPE bWord = GETWORD(*b, j);
+            WORD_TYPE high, low;
+            WORD_TYPE tmpLow, tmpHigh;
+            int carryToHigh, carryToHigher;
 
-            FN(mulDigit)(aWords[j], bWords[i], &tmp[1], &tmp[0]);
-            FN(addBigintEx)(result + k, 2*n - k, tmp, 2, result + k);
+            FN(mulDigit)(aWord, bWord, &high, &low);
+
+            carryToHigh = FN(addDigit)(GETWORD(*result, i + j), low, &tmpLow);
+            carryToHigher = FN(addDigit)(GETWORD(*result, i + j + 1), high, &tmpHigh);
+
+            tmpHigh += carryToHigh;
+            carryToHigher |= tmpHigh == 0;
+
+            SETWORD(*result, i + j, tmpLow);
+            SETWORD(*result, i + j + 1, tmpHigh);
+            {
+                for (k = i + j + 2; carryToHigher; k++)
+                {
+                    assert(k < nR);
+                    WORD_TYPE tmp = GETWORD(*result, k) + carryToHigher;
+
+                    carryToHigher = tmp == 0;
+                    SETWORD(*result, k, tmp);
+                }
+            }
         }
     }
 }
@@ -579,10 +580,10 @@ SPECIFIER void FN(divModBigint)(
 #undef WORD_TYPE
 #undef WORD_BITS
 #undef BIGINT_TYPE
-#undef BIGINT_GETWORD
-#undef BIGINT_SETWORD
-#undef BIGINT_GETNWORDS
-#undef BIGINT_SETNWORDS
+#undef GETWORD
+#undef SETWORD
+#undef GETNWORDS
+#undef SETNWORDS
 #undef HALF_WORD_BITS
 #undef HALF_WORD_BASE
 #undef HALF_WORD_MASK

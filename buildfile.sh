@@ -6,5 +6,5 @@ then
     exit 1
 fi
 
-gcc -I`pwd` -Wall -g -Wextra -DUNIT_TEST $1 -o testprogram
+gcc -I`pwd` -g -Wall -Wextra -Werror -Wfatal-errors -DUNIT_TEST $1 -o testprogram
 

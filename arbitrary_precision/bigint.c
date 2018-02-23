@@ -4,17 +4,45 @@
 #include <assert.h>
 #include <stddef.h>
 
+#define WORD_COUNT 8
+
 typedef struct
 {
-    uint32_t words[8];
+    uint32_t words[WORD_COUNT];
     size_t n;
 } BigInt;
 
 #define BIGINT_TYPE BigInt
-#define BIGINT_GETNWORDS(bi) ((bi).n)
-#define BIGINT_SETNWORDS(bi, nWords) ((bi).n = (nWords))
-#define BIGINT_GETWORD(bi, i) ((bi).words[i])
-#define BIGINT_SETWORD(bi, i, word) ((bi).words[i] = (word))
+#define GETNWORDS(bi) ((bi).n)
+#define SETNWORDS(bi, nWords) ((bi).n = (nWords))
+
+#define BOUNDS_CHECK
+
+#ifdef BOUNDS_CHECK
+    #define ASSERT(x) assert(x)
+
+    uint32_t getWord(const BigInt *bi, size_t i)
+    {
+        assert(i < WORD_COUNT);
+        return bi->words[i];
+    }
+
+    #define GETWORD(bi, i) (getWord(&(bi), (i)))
+
+    void setWord(BigInt *bi, size_t i, uint32_t word)
+    {
+        assert(i < WORD_COUNT);
+        bi->words[i] = word;
+    }
+
+    #define SETWORD(bi, i, word) (setWord(&(bi), (i), (word)))
+
+#else
+    #define ASSERT
+    #define GETWORD(bi, i) ((bi).words[i])
+    #define SETWORD(bi, i, word) ((bi).words[i] = (word))
+#endif
+
 #define WORD_TYPE uint32_t
 #define WORD_BITS 32
 #define DECLARE_STUFF
@@ -22,6 +50,7 @@ typedef struct
 #include "bigint.h"
 
 #include <stdio.h>
+#include <signal.h>
 
 int main()
 {
@@ -72,14 +101,8 @@ int main()
         assert(C.words[1] == 0xDDDDDDDD);
         assert(C.words[2] == 0xBBBBBBBB);
         assert(C.words[3] == 0x99999999);
+        assert(C.n == 4);
         assert(carry == 1);
-
-        /*carry = addBigintEx(A, 4, B, 1, C);
-        assert(C[0] == 0xFFFFFFFE);
-        assert(C[1] == 0xEEEEEEEF);
-        assert(C[2] == 0xDDDDDDDD);
-        assert(C[3] == 0xCCCCCCCC);
-        assert(carry == 0);*/
 
         /* Check if it works, when output matches input, (it should).*/
         carry = addBigint(&A, &B, &A);
@@ -87,38 +110,41 @@ int main()
         assert(A.words[1] == 0xDDDDDDDD);
         assert(A.words[2] == 0xBBBBBBBB);
         assert(A.words[3] == 0x99999999);
+        assert(C.n == 4);
         assert(carry == 1);
     }
     {
-        uint32_t A[4] = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
-        uint32_t B[4] = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
-        uint32_t C[8];
+        BigInt A = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
+        BigInt B = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
+        BigInt C;
 
-        mulBigint(A, B, C, 4);
-        assert(C[0] == 0x00000001);
-        assert(C[1] == 0x00000000);
-        assert(C[2] == 0x00000000);
-        assert(C[3] == 0x00000000);
-        assert(C[4] == 0xFFFFFFFE);
-        assert(C[5] == 0xFFFFFFFF);
-        assert(C[6] == 0xFFFFFFFF);
-        assert(C[7] == 0xFFFFFFFF);
+        mulBigint(&A, &B, &C);
+        assert(C.words[0] == 0x00000001);
+        assert(C.words[1] == 0x00000000);
+        assert(C.words[2] == 0x00000000);
+        assert(C.words[3] == 0x00000000);
+        assert(C.words[4] == 0xFFFFFFFE);
+        assert(C.words[5] == 0xFFFFFFFF);
+        assert(C.words[6] == 0xFFFFFFFF);
+        assert(C.words[7] == 0xFFFFFFFF);
+        assert(C.n == 8);
     }
 
     {
-        uint32_t A[4] = {0x12345678, 0x12345678, 0x12345678, 0x12345678};
-        uint32_t B[4] = {0x87654321, 0x87654321, 0x87654321, 0x87654321};
-        uint32_t C[8];
+        BigInt A = {{0x12345678, 0x12345678, 0x12345678, 0x12345678}, 4};
+        BigInt B = {{0x87654321, 0x87654321, 0x87654321, 0x87654321}, 4};
+        BigInt C;
 
-        mulBigint(A, B, C, 4);
-        assert(C[0] == 0x70b88d78);
-        assert(C[1] == 0xeb11e7f5);
-        assert(C[2] == 0x656b4272);
-        assert(C[3] == 0xdfc49cf0);
-        assert(C[4] == 0x78acdc7d);
-        assert(C[5] == 0xfe538200);
-        assert(C[6] == 0x83fa2782);
-        assert(C[7] == 0x09a0cd05);
+        mulBigint(&A, &B, &C);
+        assert(C.words[0] == 0x70b88d78);
+        assert(C.words[1] == 0xeb11e7f5);
+        assert(C.words[2] == 0x656b4272);
+        assert(C.words[3] == 0xdfc49cf0);
+        assert(C.words[4] == 0x78acdc7d);
+        assert(C.words[5] == 0xfe538200);
+        assert(C.words[6] == 0x83fa2782);
+        assert(C.words[7] == 0x09a0cd05);
+        assert(C.n == 8);
     }
     {
         BigInt A = {{0xFFFFFFFE, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
@@ -132,6 +158,7 @@ int main()
         assert(C.words[1] == 0xFFFFFFFF);
         assert(C.words[2] == 0xFFFFFFFF);
         assert(C.words[3] == 0xFFFFFFFF);
+        assert(C.n == 4);
         assert(borrow == 1);
     }
     {
@@ -145,6 +172,7 @@ int main()
         assert(A.words[1] == 0x8ACF1356);
         assert(A.words[2] == 0x8ACF1356);
         assert(A.words[3] == 0x8ACF1356);
+        assert(A.n == 4);
         assert(borrow == 1);
     }
     {
