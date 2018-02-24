@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
 
 #define WORD_COUNT 8
 
@@ -12,6 +13,18 @@ typedef struct
     uint32_t words[WORD_COUNT];
     size_t n;
 } BigInt;
+
+void dumpBigint(const BigInt *bi, const char *header)
+{
+	size_t n = bi->n;
+
+	printf("%s", header);
+	while (n --> 0)
+	{
+		printf("%08x ", bi->words[n]);
+	}
+	printf("\n");
+}
 
 #define BIGINT_TYPE BigInt
 #define GETNWORDS(bi) ((bi)->n)
@@ -46,6 +59,9 @@ typedef struct
 
 #define WORD_TYPE uint32_t
 #define WORD_BITS 32
+#define NUM_THEORY
+#define COPY_BIGINT(dst, src) (*(dst) = *(src))
+#define DUMP_BIGINT(x, y) dumpBigint(x, y)
 #define DECLARE_STUFF
 #define DEFINE_STUFF
 #include "bigint.h"
@@ -84,6 +100,13 @@ int main()
     assert(high == 0xFFFFFFFE);
     assert(low == 1);
 
+	{
+		BigInt zero = {{0, 0, 0, 0}, 4};
+		BigInt nonzero = {{0, 1, 0, 0}, 4};
+
+		assert(isZero(&zero));
+		assert(!isZero(&nonzero));
+	}
     {
         BigInt A = {{0x87654321, 0x2468ACE0, 0x369CF258, 0x48C048C0}, 4};
         BigInt B = {{0x88888888, 0xF2222222, 0x33333333, 0xC4444444}, 4};
@@ -406,7 +429,7 @@ int main()
     {
         BigInt ref = {{0x43573457, 0x98486223, 0x98236815, 0x99913852}, 4};
         BigInt less = {{0x43573457, 0x98486223, 0x88236815, 0x99913852}, 4};
-        BigInt greater = {{0x43573458, 0x98486223, 0x98236815, 0x99913852}, 4};
+        BigInt greater = {{0x03573457, 0x08486223, 0x9823681A, 0x99913852}, 4};
 
         assert(lessThanBigint(&less, &ref));
         assert(!lessThanBigint(&greater, &ref));
@@ -444,6 +467,62 @@ int main()
         assert(remainder.words[2] == 0x00000000);
         assert(remainder.words[3] == 0x00000000);
     }
+	{
+		BigInt zero = {{0}, 2};
+		BigInt nonzero = {{0x666, 0}, 2};
+		BigInt quotient, remainder;
+
+		/* Zero division */
+		divModBigint(&nonzero, &zero, &quotient, &remainder);
+		assert(quotient.n == 2);
+		assert(quotient.words[0] == 0xFFFFFFFF);
+		assert(quotient.words[1] == 0xFFFFFFFF);
+		assert(remainder.n == 2);
+		assert(remainder.words[0] == 0x00000666);
+		assert(remainder.words[1] == 0x00000000);
+
+		/* Dividing zero */
+		divModBigint(&zero, &nonzero, &quotient, &remainder);
+		assert(quotient.n == 2);
+		assert(quotient.words[0] == 0x00000000);
+		assert(quotient.words[1] == 0x00000000);
+
+		assert(remainder.n == 2);
+		assert(remainder.words[0] == 0x00000000);
+		assert(remainder.words[1] == 0x00000000);
+	}
+	{
+		BigInt A = {{857656800}, 1};
+		BigInt B = {{338888693}, 1};
+		BigInt gcd = {0};
+		BigInt bigA = {{0x8cc61a06, 0xbfe2f415, 0x09e0bd38}, 3}; /* 3057058046095595223711619590 */
+		BigInt bigB = {{0x508f2706, 0xc06af417, 0x006fb794}, 3}; /* 135057703026874676266608390 */
+		BigInt zero = {{0, 0}, 2};
+
+		/* Quick sanity to see the algorithm works.*/
+		gcdEuclidean(&A, &B, &gcd);
+		assert(gcd.n == 1);
+		assert(gcd.words[0] == 2431);
+
+		/* Try something large. */
+		gcdEuclidean(&bigA, &bigB, &gcd);
+		assert(gcd.n == 3); /* 21169176758730 */
+		assert(gcd.words[0] == 0xd542c9ca);
+		assert(gcd.words[1] == 0x00001340);
+		assert(gcd.words[2] == 0x00000000);
+
+		/* Mess with zero. */
+		gcdEuclidean(&bigA, &zero, &gcd);
+		assert(gcd.n == 2);
+		assert(gcd.words[0] == 0x8cc61a06);
+		assert(gcd.words[1] == 0xbfe2f415);
+
+		gcdEuclidean(&zero, &bigA, &gcd);
+		assert(gcd.n == 3);
+		assert(gcd.words[0] == 0x8cc61a06);
+		assert(gcd.words[1] == 0xbfe2f415);
+		assert(gcd.words[2] == 0x09e0bd38);
+	}
 
     printf("ALL is OK! %s %s\n", __DATE__, __TIME__);
 }

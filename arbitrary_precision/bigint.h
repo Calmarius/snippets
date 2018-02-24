@@ -39,6 +39,11 @@
     #error Please define SETNWORDS to be the macro the set the number of words in a bigint. This can be defined to be empty if the number of words is fixed.
 #endif
 
+#ifndef DUMP_BIGINT
+	/* Use for debugging.*/
+	#define DUMP_BIGINT(bigint, misc_string)
+#endif
+
 #define HALF_WORD_BITS (WORD_BITS / 2)
 
 #define HALF_WORD_BASE (1 << HALF_WORD_BITS)
@@ -75,6 +80,12 @@ SPECIFIER int FN(subDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *result);
  */
 SPECIFIER void FN(mulDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *resultHigh, WORD_TYPE *resultLow);
 
+/**
+ * Returns non-zero if the passed number is zero.
+ *
+ * x (in): The number to check.
+ */
+SPECIFIER int FN(isZero)(const BIGINT_TYPE *x);
 
 /**
  * Adds two big integers together.
@@ -208,6 +219,9 @@ SPECIFIER int FN(equalBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b);
  * dividend, divisor (in): as their name suggests...
  * quotient (opt), remainder (out): as their name suggests... The quotient can be NULL if only the modulus is needed.
  *
+ * The quotient must be able to hold the same amount of words as the dividend.
+ * The remainder must be able to hold the same amount of words as the divisor.
+ *
  *
  * Words in little endian order.
  *
@@ -227,6 +241,15 @@ SPECIFIER void FN(divModBigint)(
     #error Please define COPY_BIGINT as a means to copy big integers.
 #endif
 
+/**
+ * Calculates the greatest common divisor of the big integers.
+ *
+ * a, b (in): The two numbers of interest.
+ * gcd (out): Their GCD.
+ *
+ * The number of words in GCD matches the number of words in b.
+ *
+ */
 SPECIFIER void FN(gcdEuclidean)(
     const BIGINT_TYPE *a,
     const BIGINT_TYPE *b,
@@ -277,6 +300,18 @@ SPECIFIER void FN(mulDigit)(WORD_TYPE a, WORD_TYPE b, WORD_TYPE *resultHigh, WOR
     *resultHigh += FN(addDigit)(*resultLow, overlapping2 << HALF_WORD_BITS, resultLow);
     FN(addDigit)(*resultHigh, overlapping1 >> HALF_WORD_BITS, resultHigh);
     FN(addDigit)(*resultHigh, overlapping2 >> HALF_WORD_BITS, resultHigh);
+}
+
+
+SPECIFIER int FN(isZero)(const BIGINT_TYPE *x)
+{
+	size_t n = GETNWORDS(x);
+
+	while (n --> 0)
+	{
+		if (GETWORD(x, n) != 0) return 0;
+	}
+	return 1;
 }
 
 
@@ -538,6 +573,7 @@ SPECIFIER int FN(lessThanBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b)
         WORD_TYPE bWord = n < nB ? GETWORD(b, n) : 0;
 
         if (aWord < bWord) return 1;
+        if (aWord > bWord) return 0;
     }
     return 0;
 }
@@ -619,7 +655,23 @@ SPECIFIER void FN(gcdEuclidean)(
     BIGINT_TYPE *gcd
 )
 {
+	BIGINT_TYPE high, low;
 
+	COPY_BIGINT(&high, a);
+	COPY_BIGINT(&low, b);
+
+	for (;;)
+	{
+		FN(divModBigint)(&high, &low, NULL, gcd);
+		if (FN(isZero(gcd)))
+		{
+			COPY_BIGINT(gcd, &low);
+			return;
+		}
+
+		COPY_BIGINT(&high, &low);
+		COPY_BIGINT(&low, gcd);
+	}
 }
 
 #endif
@@ -640,6 +692,7 @@ SPECIFIER void FN(gcdEuclidean)(
 #undef HALF_WORD_MASK
 #undef NUM_THEORY
 #undef COPY_BIGINT
+#undef DUMP_BIGINT
 
 #undef DECLARE_STUFF
 #undef DEFINE_STUFF

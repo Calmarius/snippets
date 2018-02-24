@@ -6,7 +6,7 @@ then
     exit 1
 fi
 
+OPTIONS="-Wall -Wextra -Werror -Wfatal-errors"
 
-
-gcc -I`pwd` $2 -g -Wall -Wextra -Werror -Wfatal-errors -DUNIT_TEST $1 -o testprogram
+gcc -I`pwd` $2 -g $OPTIONS -DUNIT_TEST $1 -o testprogram
 
