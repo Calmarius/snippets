@@ -233,7 +233,6 @@ SPECIFIER int FN(equalBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b);
  * The quotient must be able to hold the same amount of words as the dividend.
  * The remainder must be able to hold the same amount of words as the divisor.
  *
- *
  * Words in little endian order.
  *
  * Zero division is indicated by remainder == dividend and quotient == all 1 bits.
@@ -271,6 +270,26 @@ SPECIFIER void FN(divModBigint)(
 SPECIFIER void FN(gcdEuclidean)(
     const BIGINT_TYPE *a,
     const BIGINT_TYPE *b,
+    BIGINT_TYPE *gcd
+);
+
+/**
+ * Solves the ax + by = gcd(a,b) equation on integer numbers.
+ *
+ * a, b (in): The two input parameters.
+ * x, y, gcd (out): The two unknown and the coefficient, they will be calculated by the algorithm.
+ *
+ * The x, y and gcd is initialized by this function.
+ * The x will have the same amount of words as b.
+ * The y will have the same amount of words as a.
+ * The gcd will have the same amount of words as b.
+ *
+ */
+SPECIFIER void FN(gcdExtendedEuclidean)(
+    const BIGINT_TYPE *a,
+    const BIGINT_TYPE *b,
+    BIGINT_TYPE *x,
+    BIGINT_TYPE *y,
     BIGINT_TYPE *gcd
 );
 #endif
@@ -442,7 +461,7 @@ SPECIFIER int FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
                 if (!truncate && ((high != 0) || carryToHigh))
                 {
                     /* We would carry a word or carry beyond the last word in the result this indicates truncation.*/
-                    /*printf("Truncation high case:  i: %d, j: %d, k: %d, nR: %d, carryToHigh: %08x, high: %08x, aWord: %08x, bWord: %08x\n", 
+                    /*printf("Truncation high case:  i: %d, j: %d, k: %d, nR: %d, carryToHigh: %08x, high: %08x, aWord: %08x, bWord: %08x\n",
                         (int)i, (int)j, (int)k, (int)nR, carryToHigh, high, aWord, bWord);*/
                     truncate = 1;
                 }

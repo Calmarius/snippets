@@ -625,6 +625,49 @@ int main()
         assert(GCD.n == 1);
         assert(GCD.words[0] == 77);
     }
+    {
+        BigInt A = {{0x36547d80, 0x163a263d }, 2}; /* 1601634661830000000 */
+        BigInt B = {{91091}, 1};
+        BigInt X, Y, GCD;
+
+        gcdExtendedEuclidean(&A, &B, &X, &Y, &GCD);
+        assert(X.n == 1);
+        assert(X.words[0] == (uint32_t)-197);
+        assert(Y.n == 2);
+        assert(Y.words[0] == 0x65b0abeb); /* 3463811225922539 */
+        assert(Y.words[1] == 0x000c4e51);
+        assert(GCD.n == 1);
+        assert(GCD.words[0] == 49);
+
+        /* Reverse the arguments to see how it affect the word count: */
+        gcdExtendedEuclidean(&B, &A, &X, &Y, &GCD);
+
+        assert(X.n == 2);
+        assert(X.words[0] == 0x65b0abeb); /* 3463811225922539 */
+        assert(X.words[1] == 0x000c4e51);
+        assert(Y.n == 1);
+        assert(Y.words[0] == (uint32_t)-197);
+        assert(GCD.n == 2);
+        assert(GCD.words[0] == 49);
+        assert(GCD.words[1] == 0);
+    }
+    {
+        BigInt zero = {{0}, 2};
+        BigInt nonzero = {{42}, 1};
+        BigInt X, Y, GCD;
+
+        gcdExtendedEuclidean(&zero, &nonzero, &X, &Y, &GCD);
+        /* 0x + 42y = 42 will be solved. X will be zero, Y will be 1. */
+        assert(GCD.n == 1);
+        assert(GCD.words[0] == 42);
+
+        assert(X.n == 1);
+        assert(X.words[0] == 0);
+
+        assert(Y.n == 2);
+        assert(Y.words[0] == 1);
+        assert(Y.words[1] == 0);
+    }
 
     printf("ALL is OK! %s %s\n", __DATE__, __TIME__);
     return 0;
