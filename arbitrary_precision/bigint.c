@@ -38,6 +38,7 @@ void dumpBigint(const BigInt *bi, const char *header)
     uint32_t getWord(const BigInt *bi, size_t i)
     {
         assert(i < WORD_COUNT);
+        assert(i < bi->n);
         return bi->words[i];
     }
 
@@ -46,6 +47,7 @@ void dumpBigint(const BigInt *bi, const char *header)
     void setWord(BigInt *bi, size_t i, uint32_t word)
     {
         assert(i < WORD_COUNT);
+        assert(i < bi->n);
         bi->words[i] = word;
     }
 
@@ -61,6 +63,8 @@ void dumpBigint(const BigInt *bi, const char *header)
 #define WORD_BITS 32
 #define NUM_THEORY
 #define COPY_BIGINT(dst, src) (*(dst) = *(src))
+#define INIT_BIGINT(bi, nWords) ((bi)->n = (nWords))
+#define ZERO_BIGINT(bi) (memset(bi, 0, (bi)->n * sizeof((bi)->words[0])))
 #define DUMP_BIGINT(x, y) dumpBigint(x, y)
 #define DECLARE_STUFF
 #define DEFINE_STUFF
@@ -77,7 +81,8 @@ typedef struct
 #define GETWORD(bi, i) ((bi)->words[i])
 #define SETWORD(bi, i, word) ((bi)->words[i] = (word))
 #define GETNWORDS(bi) 8
-#define SETNWORDS(bi, words)
+#define SETNWORDS(bi, words) (void)(words)
+#define ZERO_BIGINT(bi) (memset(bi, 0, sizeof((bi)->words)))
 #define PREFIX i256_
 #define DECLARE_STUFF
 #define DEFINE_STUFF
@@ -158,8 +163,12 @@ int main()
         BigInt A = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
         BigInt B = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
         BigInt C = {0};
+        int res;
 
-        mulBigint(&A, &B, &C);
+        /* Exercise all sorts of carry and overflow. */
+        C.n = 8;
+        res = mulBigint(&A, &B, &C);
+        assert(res == 0);
         assert(C.words[0] == 0x00000001);
         assert(C.words[1] == 0x00000000);
         assert(C.words[2] == 0x00000000);
@@ -175,8 +184,12 @@ int main()
         BigInt A = {{0x12345678, 0x12345678, 0x12345678, 0x12345678}, 4};
         BigInt B = {{0x87654321, 0x87654321, 0x87654321, 0x87654321}, 4};
         BigInt C = {0};
+        int res;
 
-        mulBigint(&A, &B, &C);
+        /* Randomized test. */
+        C.n = 8;
+        res = mulBigint(&A, &B, &C);
+        assert(res == 0);
         assert(C.words[0] == 0x70b88d78);
         assert(C.words[1] == 0xeb11e7f5);
         assert(C.words[2] == 0x656b4272);
@@ -186,6 +199,80 @@ int main()
         assert(C.words[6] == 0x83fa2782);
         assert(C.words[7] == 0x09a0cd05);
         assert(C.n == 8);
+
+        /* Test if truncation works in general. */
+        C.n = 4;
+        res = mulBigint(&A, &B, &C);
+        assert(res == 1);
+        assert(C.words[0] == 0x70b88d78);
+        assert(C.words[1] == 0xeb11e7f5);
+        assert(C.words[2] == 0x656b4272);
+        assert(C.words[3] == 0xdfc49cf0);
+        assert(C.n == 4);
+    }
+    {
+        BigInt A = {{1, 1, 0, 0}, 4};
+        BigInt B = {{1, 1, 1, 0}, 4};
+        BigInt C;
+        int res;
+
+        /* Nontruncation case. The result fits. */
+        C.n = 4;
+        res = mulBigint(&A, &B, &C);
+        assert(res == 0);
+        assert(C.n == 4);
+        assert(C.words[0] == 0x00000001);
+        assert(C.words[1] == 0x00000002);
+        assert(C.words[2] == 0x00000002);
+        assert(C.words[3] == 0x00000001);
+    }
+    {
+        BigInt A = {{1, 1, 1, 1}, 4};
+        BigInt B = {{1, 1, 1, 1}, 4};
+        BigInt C;
+        int res;
+
+        /* Truncation. Nonzero low word case. */
+        C.n = 4;
+        res = mulBigint(&A, &B, &C);
+        assert(res == 1);
+        assert(C.n == 4);
+        assert(C.words[0] == 0x00000001);
+        assert(C.words[1] == 0x00000002);
+        assert(C.words[2] == 0x00000003);
+        assert(C.words[3] == 0x00000004);
+    }
+    {
+        BigInt A = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
+        BigInt B = {{2, 0, 0, 0}, 4};
+        BigInt C;
+        int res;
+
+        /* Truncation. Nonzero high word case. */
+        C.n = 4;
+        res = mulBigint(&A, &B, &C);
+        assert(res == 1);
+        assert(C.n == 4);
+        assert(C.words[0] == 0xFFFFFFFE);
+        assert(C.words[1] == 0xFFFFFFFF);
+        assert(C.words[2] == 0xFFFFFFFF);
+        assert(C.words[3] == 0xFFFFFFFF);
+    }
+    {
+        BigInt A = {{0x00000001, 0x00000001, 0, 0}, 4};
+        BigInt B = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
+        BigInt C;
+        int res;
+
+        /* Truncation. Carry to beyond case. */
+        C.n = 4;
+        res = mulBigint(&A, &B, &C);
+        assert(res == 1);
+        assert(C.n == 4);
+        assert(C.words[0] == 0xFFFFFFFF);
+        assert(C.words[1] == 0xFFFFFFFE);
+        assert(C.words[2] == 0xFFFFFFFF);
+        assert(C.words[3] == 0xFFFFFFFF);
     }
     {
         BigInt A = {{0xFFFFFFFE, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
@@ -347,6 +434,7 @@ int main()
         /* AND */
         bakA = A;
         bakB = B;
+        C.n = 4;
         /* Normal */
         andBigint(&A, &B, &C);
         assert(C.words[0] == 0x00044448);
@@ -523,6 +611,20 @@ int main()
 		assert(gcd.words[1] == 0xbfe2f415);
 		assert(gcd.words[2] == 0x09e0bd38);
 	}
+    {
+        /* Quick sanity to see the extended euclidean works.*/
+        BigInt A = {{2310}, 1};
+        BigInt B = {{17017}, 1};
+        BigInt X, Y, GCD;
+
+        gcdExtendedEuclidean(&A, &B, &X, &Y, &GCD);
+        assert(X.n == 1);
+        assert(X.words[0] == (uint32_t)-81);
+        assert(Y.n == 1);
+        assert(Y.words[0] == 11);
+        assert(GCD.n == 1);
+        assert(GCD.words[0] == 77);
+    }
 
     printf("ALL is OK! %s %s\n", __DATE__, __TIME__);
 }

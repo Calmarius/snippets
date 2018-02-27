@@ -1,6 +1,8 @@
 /**
  * Basic arithmetic operations and various theory functions on arbitrary precision integers.
+ * The functions are operating on UNSIGNED big integers, unless noted otherwise.
  */
+
 
 #include "meta/templateheader.h"
 
@@ -32,6 +34,12 @@
 #ifndef GETNWORDS
     /* Example: #define GETNWORDS(bi) (bi->nWords) */
     #error Please define GETNWORDS to be the macro the queries the number of words in a bigint. This can be defined to be a constant if the number of words is empty.
+#endif
+
+#ifndef ZERO_BIGINT
+    /* Example: #define ZEROBIGINT(bi) (memset(bi, 0, (bi).n * sizeof(WORD_TYPE))*/
+    /* This macro should zero all words in the specified bigint. */
+    #error Please define ZERO_BIGINT to be the macro that zeroes big integers.
 #endif
 
 #ifndef SETNWORDS
@@ -119,11 +127,14 @@ SPECIFIER int FN(subBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
  * a (in): The first number.
  * b (in): The second number.
  * result (out): The result of the multiplication. Words in little endian order.
- *      The number of the words in the result will be the sum of the number of the words in the two argument.
+ *      The number of the words in the result will be the sum of the number of the words in the two arguments.
+ *      If it cannot hold that many words the result will be truncated.
  *
  * Outputs must not point to the inputs.
+ *
+ * Returns non-zero if the result is truncated.
  */
-SPECIFIER void FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result);
+SPECIFIER int FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result);
 
 
 /**
@@ -238,7 +249,14 @@ SPECIFIER void FN(divModBigint)(
 
 #ifndef COPY_BIGINT
     /* Example: #define COPY_BIGINT(dst, src) *dst = *src */
+    /* This macro should perform the copying of big ints it should make sure the previous content in destination is freed when needed.*/
     #error Please define COPY_BIGINT as a means to copy big integers.
+#endif
+
+#ifndef INIT_BIGINT
+    /* Example: #define INIT_BIGINT(bi, nWords) ((bi)->n = (nWords);*/
+    /* This (re)initializes big ints to hold the specified amount of words. It should release the previous content if needed. */
+    #error Please define INIT_BIGINT as a way to initialize space in big integers.
 #endif
 
 /**
@@ -374,19 +392,15 @@ SPECIFIER int FN(subBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
 }
 
 
-SPECIFIER void FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result)
+SPECIFIER int FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result)
 {
-    size_t i, j, k;
+    size_t i, j;
     size_t nA = GETNWORDS(a);
     size_t nB = GETNWORDS(b);
-    size_t nR = nA + nB;
+    size_t nR = GETNWORDS(result);
+    int truncate = 0;
 
-    for (k = 0; k < nR; k++)
-    {
-        SETWORD(result, k, 0);
-    }
-
-    SETNWORDS(result, nR);
+    ZERO_BIGINT(result);
 
     /* long multiplication algorithm. */
     for (i = 0; i < nA; i++)
@@ -394,6 +408,12 @@ SPECIFIER void FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_
         for (j = 0; j < nB; j++)
         {
             size_t k = i + j;
+            if (truncate && (k >= nR))
+            {
+                /* If we know we are truncating we don't need to care about what would go beyond the last word.. */
+                continue;
+            }
+
             WORD_TYPE aWord = GETWORD(a, i);
             WORD_TYPE bWord = GETWORD(b, j);
             WORD_TYPE high, low;
@@ -402,26 +422,55 @@ SPECIFIER void FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_
 
             FN(mulDigit)(aWord, bWord, &high, &low);
 
-            carryToHigh = FN(addDigit)(GETWORD(result, i + j), low, &tmpLow);
-            carryToHigher = FN(addDigit)(GETWORD(result, i + j + 1), high, &tmpHigh);
+            if (k >= nR)
+            {
+                if (low != 0)
+                {
+                    /* The low word is nonzero and would go beyond the last word, this means truncation. */
+                    /*printf("Truncate low case.\n");*/
+                    truncate = 1;
+                }
+                continue;
+            }
+            carryToHigh = FN(addDigit)(GETWORD(result, k), low, &tmpLow);
+            SETWORD(result, k, tmpLow);
+            if (k + 1 >= nR)
+            {
+                if (!truncate && ((high != 0) || carryToHigh))
+                {
+                    /* We would carry a word or carry beyond the last word in the result this indicates truncation.*/
+                    /*printf("Truncation high case:  i: %d, j: %d, k: %d, nR: %d, carryToHigh: %08x, high: %08x, aWord: %08x, bWord: %08x\n", 
+                        (int)i, (int)j, (int)k, (int)nR, carryToHigh, high, aWord, bWord);*/
+                    truncate = 1;
+                }
+                continue;
+            }
+            carryToHigher = FN(addDigit)(GETWORD(result, k + 1), high, &tmpHigh);
 
             tmpHigh += carryToHigh;
-            carryToHigher |= tmpHigh == 0;
-
-            SETWORD(result, i + j, tmpLow);
-            SETWORD(result, i + j + 1, tmpHigh);
+            if (carryToHigh)
             {
-                for (k = i + j + 2; carryToHigher; k++)
-                {
-                    assert(k < nR);
-                    WORD_TYPE tmp = GETWORD(result, k) + carryToHigher;
+                /* Check if tmpHigh overflowed, this would indicate another carry higher. */
+                carryToHigher |= tmpHigh == 0;
+            }
 
-                    carryToHigher = tmp == 0;
-                    SETWORD(result, k, tmp);
-                }
+            SETWORD(result, k + 1, tmpHigh);
+            for (k = k + 2; (k < nR && carryToHigher); k++)
+            {
+                WORD_TYPE tmp = GETWORD(result, k) + carryToHigher;
+
+                carryToHigher = tmp == 0;
+                SETWORD(result, k, tmp);
+            }
+            if ((k == nR) && (carryToHigher))
+            {
+                /* We would carry to higher than the last word. This indicates truncation. */
+                /*printf("Truncation carryToHigher case. i: %d, j: %d, k: %d\n", (int)i, (int)j, (int)k);*/
+                truncate = 1;
             }
         }
     }
+    return truncate;
 }
 
 
@@ -610,15 +659,9 @@ SPECIFIER void FN(divModBigint)(
     i = 0;
     if (quotient)
     {
-        for (i = 0; i < nD; i++)
-        {
-            SETWORD(quotient, i, 0);
-        }
+        ZERO_BIGINT(quotient);
     }
-    for (i = 0; i < nS; i++)
-    {
-        SETWORD(remainder, i, 0);
-    }
+    ZERO_BIGINT(remainder);
 
     if (quotient) {SETNWORDS(quotient, nD);}
     SETNWORDS(remainder, nS);
@@ -649,6 +692,7 @@ SPECIFIER void FN(divModBigint)(
 
 
 #ifdef NUM_THEORY
+
 SPECIFIER void FN(gcdEuclidean)(
     const BIGINT_TYPE *a,
     const BIGINT_TYPE *b,
@@ -674,6 +718,77 @@ SPECIFIER void FN(gcdEuclidean)(
 	}
 }
 
+SPECIFIER void FN(gcdExtendedEuclidean)(
+    const BIGINT_TYPE *a,
+    const BIGINT_TYPE *b,
+    BIGINT_TYPE *x,
+    BIGINT_TYPE *y,
+    BIGINT_TYPE *gcd
+)
+{
+	BIGINT_TYPE high, low;
+    BIGINT_TYPE highHighCoeff, highLowCoeff;
+    BIGINT_TYPE lowHighCoeff, lowLowCoeff;
+    BIGINT_TYPE remHighCoeff, remLowCoeff;
+    BIGINT_TYPE quotient;
+    size_t nA = GETNWORDS(a);
+    size_t nB = GETNWORDS(b);
+
+	COPY_BIGINT(&high, a);
+	COPY_BIGINT(&low, b);
+
+    INIT_BIGINT(&highHighCoeff, nB);
+    INIT_BIGINT(&lowHighCoeff, nB);
+    INIT_BIGINT(&remHighCoeff, nB);
+    INIT_BIGINT(&quotient, nA);
+
+    INIT_BIGINT(&highLowCoeff, nA);
+    INIT_BIGINT(&lowLowCoeff, nA);
+    INIT_BIGINT(&remLowCoeff, nA);
+
+    ZERO_BIGINT(&highLowCoeff);
+    ZERO_BIGINT(&lowLowCoeff);
+    ZERO_BIGINT(&remLowCoeff);
+    ZERO_BIGINT(&highHighCoeff);
+    ZERO_BIGINT(&lowHighCoeff);
+    ZERO_BIGINT(&remHighCoeff);
+
+    SETWORD(&highHighCoeff, 0, 1);
+    SETWORD(&lowLowCoeff, 0, 1);
+
+	for (;;)
+	{
+        BIGINT_TYPE tmp;
+
+		FN(divModBigint)(&high, &low, &quotient, gcd);
+		if (FN(isZero(gcd)))
+		{
+			COPY_BIGINT(gcd, &low);
+            COPY_BIGINT(x, &lowHighCoeff);
+            COPY_BIGINT(y, &lowLowCoeff);
+			return;
+		}
+
+        INIT_BIGINT(&tmp, GETNWORDS(&highHighCoeff));
+        FN(mulBigint)(&quotient, &lowHighCoeff, &tmp);
+        FN(subBigint)(&highHighCoeff, &tmp, &remHighCoeff);
+
+        INIT_BIGINT(&tmp, GETNWORDS(&highLowCoeff));
+        FN(mulBigint)(&quotient, &lowLowCoeff, &tmp);
+        FN(subBigint)(&highLowCoeff, &tmp, &remLowCoeff);
+
+
+		COPY_BIGINT(&high, &low);
+        COPY_BIGINT(&highHighCoeff, &lowHighCoeff);
+        COPY_BIGINT(&highLowCoeff, &lowLowCoeff);
+
+		COPY_BIGINT(&low, gcd);
+		COPY_BIGINT(&lowHighCoeff, &remHighCoeff);
+		COPY_BIGINT(&lowLowCoeff, &remLowCoeff);
+	}
+}
+
+
 #endif
 
 #endif
@@ -692,7 +807,9 @@ SPECIFIER void FN(gcdEuclidean)(
 #undef HALF_WORD_MASK
 #undef NUM_THEORY
 #undef COPY_BIGINT
+#undef INIT_BIGINT
 #undef DUMP_BIGINT
+#undef ZERO_BIGINT
 
 #undef DECLARE_STUFF
 #undef DEFINE_STUFF
