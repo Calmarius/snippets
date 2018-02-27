@@ -94,6 +94,8 @@ int main()
     assert(E.parent == &A);
     assert(E.left == NULL);
     assert(E.right == NULL);
+
+    return 0;
 }
 
 #endif

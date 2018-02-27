@@ -116,6 +116,7 @@ int main()
 
     clear(&root);
 
+    return 0;
 }
 
 #endif

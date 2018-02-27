@@ -408,17 +408,20 @@ SPECIFIER int FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
         for (j = 0; j < nB; j++)
         {
             size_t k = i + j;
+            WORD_TYPE aWord;
+            WORD_TYPE bWord;
+            WORD_TYPE high, low;
+            WORD_TYPE tmpLow, tmpHigh;
+            int carryToHigh, carryToHigher;
+
             if (truncate && (k >= nR))
             {
                 /* If we know we are truncating we don't need to care about what would go beyond the last word.. */
                 continue;
             }
 
-            WORD_TYPE aWord = GETWORD(a, i);
-            WORD_TYPE bWord = GETWORD(b, j);
-            WORD_TYPE high, low;
-            WORD_TYPE tmpLow, tmpHigh;
-            int carryToHigh, carryToHigher;
+            aWord = GETWORD(a, i);
+            bWord = GETWORD(b, j);
 
             FN(mulDigit)(aWord, bWord, &high, &low);
 

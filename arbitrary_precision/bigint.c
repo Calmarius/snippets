@@ -627,6 +627,7 @@ int main()
     }
 
     printf("ALL is OK! %s %s\n", __DATE__, __TIME__);
+    return 0;
 }
 
 #endif

@@ -96,6 +96,8 @@ int main()
         deleteByKey(&root, i);
         validate(root);
     }
+
+    return 0;
 }
 
 #endif

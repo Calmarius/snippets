@@ -64,6 +64,7 @@ int main()
     assert(find(root, 6969) == NULL);
     assert(find(root, 666) == NULL);
 
+    return 0;
 }
 
 #endif

@@ -53,6 +53,8 @@ int main()
     
     assert(fnv32((const uint8_t*)testStr, n) == 0x7a78f512);
     assert(fnv64((const uint8_t*)testStr, n) == 0x9e527e14572072d2);
+
+    return 0;
 }
 
 #endif

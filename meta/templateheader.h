@@ -1,10 +1,14 @@
 #define CCAT2(x, y) x ## y
 #define CCAT(x, y) CCAT2(x, y)
 
-#define FN(x) CCAT(PREFIX, x)
-
 #ifndef PREFIX
     #define PREFIX
+#endif
+
+#if (3-PREFIX-3 == 6)
+    #define FN(x) x
+#else
+    #define FN(x) CCAT(PREFIX, x)
 #endif
 
 #ifndef SPECIFIER
