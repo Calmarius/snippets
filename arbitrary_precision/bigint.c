@@ -63,7 +63,8 @@ void dumpBigint(const BigInt *bi, const char *header)
 #define WORD_BITS 32
 #define NUM_THEORY
 #define COPY_BIGINT(dst, src) (*(dst) = *(src))
-#define INIT_BIGINT(bi, nWords) ((bi)->n = (nWords))
+#define INIT_BIGINT(bi, nWords) {(bi)->n = (nWords); assert((bi)->n <= WORD_COUNT);}
+#define DEINIT_BIGINT(bi)
 #define ZERO_BIGINT(bi) (memset(bi, 0, (bi)->n * sizeof((bi)->words[0])))
 #define DUMP_BIGINT(x, y) dumpBigint(x, y)
 #define DECLARE_STUFF
@@ -667,6 +668,65 @@ int main()
         assert(Y.n == 2);
         assert(Y.words[0] == 1);
         assert(Y.words[1] == 0);
+
+        /* Zero division testcase */
+        /* 42x + 0y = 42 will be solvesd. Both X and Y will be 1.*/
+        gcdExtendedEuclidean(&nonzero, &zero, &X, &Y, &GCD);
+        assert(GCD.n == 2);
+        assert(GCD.words[0] == 42);
+        assert(GCD.words[1] == 0);
+
+        assert(X.n == 2);
+        assert(X.words[0] == 1);
+        assert(X.words[1] == 0);
+
+        assert(Y.n == 1);
+        assert(Y.words[0] == 1);
+    }
+    {
+        BigInt base = {{3, 0}, 2};
+        BigInt exponent = {{19}, 1};
+        BigInt mod = {{2000000000}, 1};
+        BigInt zero = {{0}, 1};
+        BigInt res;
+        int ret;
+
+        /* Normal case. */
+        ret = modPowBigint(&base, &exponent, &mod, &res);
+        assert(ret == 0);
+        assert(res.n == 1);
+        assert(res.words[0] == 1162261467); /* 3^19. */
+
+        /* Zero exponent case */
+        ret = modPowBigint(&base, &zero, &mod, &res);
+        assert(ret == 0);
+        assert(res.n == 1);
+        assert(res.words[0] == 1); /* 3^0 = 1. */
+
+        /* Zero base case */
+        ret = modPowBigint(&zero, &exponent, &mod, &res);
+        assert(ret == 0);
+        assert(res.n == 1);
+        assert(res.words[0] == 0); /* 0^19 = 0. */
+
+        /* Zero modulus case. */
+        ret = modPowBigint(&base, &exponent, &zero, &res);
+        assert(ret == 0);
+        assert(res.n == 1);
+        assert(res.words[0] == 1162261467); /* 3^19. */
+    }
+    {
+        BigInt base = {{42, 0}, 2};
+        BigInt exponent = {{4242424242}, 1};
+        BigInt modulus = {{1000000}, 1};
+        BigInt res;
+        int ret;
+
+        /* Large exponent case */
+        ret = modPowBigint(&base, &exponent, &modulus, &res);
+        assert(ret == 0);
+        assert(res.n == 1);
+        assert(res.words[0] == 880064);
     }
 
     printf("ALL is OK! %s %s\n", __DATE__, __TIME__);

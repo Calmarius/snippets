@@ -235,7 +235,8 @@ SPECIFIER int FN(equalBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b);
  *
  * Words in little endian order.
  *
- * Zero division is indicated by remainder == dividend and quotient == all 1 bits.
+ * There is no check against zero division. Because it's expected that the user already does that.
+ * Anyway at the end of the algorithm it is indicated by remainder == dividend and quotient == all 1 bits.
  */
 SPECIFIER void FN(divModBigint)(
     const BIGINT_TYPE *dividend,
@@ -244,18 +245,43 @@ SPECIFIER void FN(divModBigint)(
     BIGINT_TYPE *remainder
 );
 
+
+/**
+ * Performs integer exponentiation modulo a given number.
+ *
+ * base, exponent, modulo (in): The inputs.
+ * result (out): The result. It will hold the same amount of words as the modulo holds.
+ *
+ * Returns non-zero if truncation occured during the calculation this also indicates the result is incorrect.
+ */
+SPECIFIER int FN(modPowBigint)(
+    const BIGINT_TYPE *base,
+    const BIGINT_TYPE *exponent,
+    const BIGINT_TYPE *modulo,
+    BIGINT_TYPE *result
+);
+
 #ifdef NUM_THEORY
 
 #ifndef COPY_BIGINT
     /* Example: #define COPY_BIGINT(dst, src) *dst = *src */
-    /* This macro should perform the copying of big ints it should make sure the previous content in destination is freed when needed.*/
+    /* This macro should perform the copying of big ints it should make sure the previous content in destination is freed when needed.
+     * On failed allocation the macro should jump to the 'cleanup' label, and possibly set a thread local error variable.
+     */
     #error Please define COPY_BIGINT as a means to copy big integers.
 #endif
 
 #ifndef INIT_BIGINT
     /* Example: #define INIT_BIGINT(bi, nWords) ((bi)->n = (nWords);*/
-    /* This (re)initializes big ints to hold the specified amount of words. It should release the previous content if needed. */
+    /* This (re)initializes big ints to hold the specified amount of words. It should release the previous content if needed.
+     * On failed allocation the macro should jump to the 'cleanup' label, and possibly set a thread local error variable.
+     */
     #error Please define INIT_BIGINT as a way to initialize space in big integers.
+#endif
+
+#ifndef DEINIT_BIGINT
+    /* This is needed to deinit big integers cleanly. (only if memory management needed)*/
+    #error Please define DEINIT_BIGINT as a way to clean up space in big integers.
 #endif
 
 /**
@@ -694,6 +720,7 @@ SPECIFIER void FN(divModBigint)(
     {
         size_t j = WORD_BITS;
         WORD_TYPE dividendWord = GETWORD(dividend, i);
+        WORD_TYPE quotientWord = 0;
 
         while (j --> 0)
         {
@@ -705,10 +732,11 @@ SPECIFIER void FN(divModBigint)(
 
             if (!FN(lessThanBigint)(remainder, divisor))
             {
-                if (quotient) SETWORD(quotient, i, GETWORD(quotient, i) | (1 << j));
+                if (quotient) quotientWord |= 1 << j;
                 FN(subBigint)(remainder, divisor, remainder);
             }
         }
+        if (quotient) SETWORD(quotient, i, quotientWord);
     }
 }
 
@@ -732,12 +760,15 @@ SPECIFIER void FN(gcdEuclidean)(
 		if (FN(isZero(gcd)))
 		{
 			COPY_BIGINT(gcd, &low);
-			return;
+			goto cleanup;
 		}
 
 		COPY_BIGINT(&high, &low);
 		COPY_BIGINT(&low, gcd);
 	}
+cleanup:
+	DEINIT_BIGINT(&high);
+	DEINIT_BIGINT(&low);
 }
 
 SPECIFIER void FN(gcdExtendedEuclidean)(
@@ -788,7 +819,7 @@ SPECIFIER void FN(gcdExtendedEuclidean)(
 			COPY_BIGINT(gcd, &low);
             COPY_BIGINT(x, &lowHighCoeff);
             COPY_BIGINT(y, &lowLowCoeff);
-			return;
+			goto cleanup;
 		}
 
         INIT_BIGINT(&tmp, GETNWORDS(&highHighCoeff));
@@ -808,7 +839,76 @@ SPECIFIER void FN(gcdExtendedEuclidean)(
 		COPY_BIGINT(&lowHighCoeff, &remHighCoeff);
 		COPY_BIGINT(&lowLowCoeff, &remLowCoeff);
 	}
+cleanup:
+    DEINIT_BIGINT(&highHighCoeff);
+    DEINIT_BIGINT(&lowHighCoeff);
+    DEINIT_BIGINT(&remHighCoeff);
+    DEINIT_BIGINT(&quotient);
+
+    DEINIT_BIGINT(&highLowCoeff);
+    DEINIT_BIGINT(&lowLowCoeff);
+    DEINIT_BIGINT(&remLowCoeff);
+
+	DEINIT_BIGINT(&high);
+	DEINIT_BIGINT(&low);
 }
+
+
+SPECIFIER int FN(modPowBigint)(
+    const BIGINT_TYPE *base,
+    const BIGINT_TYPE *exponent,
+    const BIGINT_TYPE *modulo,
+    BIGINT_TYPE *result
+)
+{
+    BIGINT_TYPE res;
+    BIGINT_TYPE mulRes;
+    int canStart = 0;
+    int truncated = 0;
+
+    INIT_BIGINT(&res, GETNWORDS(modulo));
+    INIT_BIGINT(&mulRes, 2*GETNWORDS(base));
+
+    ZERO_BIGINT(&res);
+    SETWORD(&res, 0, 1);
+
+    {
+        size_t n = GETNWORDS(exponent);
+
+        while (n --> 0)
+        {
+            size_t m = WORD_BITS;
+            WORD_TYPE expWord = GETWORD(exponent, n);
+
+            while (m --> 0)
+            {
+                if (expWord & (1 << m)) canStart = 1;
+                if (!canStart) continue;
+
+                /* Square the number. */
+                truncated |= FN(mulBigint)(&res, &res, &mulRes);
+                FN(divModBigint)(&mulRes, modulo, NULL, &res);
+
+                /* Multiply*/
+                if (expWord & (1 << m))
+                {
+                    truncated |= FN(mulBigint)(&res, base, &mulRes);
+                    FN(divModBigint)(&mulRes, modulo, NULL, &res);
+                }
+            }
+        }
+        COPY_BIGINT(result, &res);
+    }
+
+goto cleanup;
+cleanup:
+    DEINIT_BIGINT(&res);
+    DEINIT_BIGINT(&newRes);
+    return truncated;
+}
+
+
+
 
 
 #endif
