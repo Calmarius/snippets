@@ -105,7 +105,7 @@ SPECIFIER int FN(isZero)(const BIGINT_TYPE *x);
  *
  * Returns the carry.
  **/
-SPECIFIER int FN(addBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result);
+SPECIFIER int FN(add)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result);
 
 
 /**
@@ -118,7 +118,7 @@ SPECIFIER int FN(addBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
  *
  * Returns the borrow.
  **/
-SPECIFIER int FN(subBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result);
+SPECIFIER int FN(sub)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result);
 
 
 /**
@@ -134,7 +134,7 @@ SPECIFIER int FN(subBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
  *
  * Returns non-zero if the result is truncated.
  */
-SPECIFIER int FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result);
+SPECIFIER int FN(mul)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result);
 
 
 /**
@@ -147,7 +147,7 @@ SPECIFIER int FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
  * Words in little endian order.
  * The output can be the same as input.
  */
-SPECIFIER void FN(shlBigint)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned shiftAmount);
+SPECIFIER void FN(shl)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned shiftAmount);
 
 
 /**
@@ -160,7 +160,7 @@ SPECIFIER void FN(shlBigint)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned s
  * Words in little endian order.
  * The output can be the same as input.
  */
-SPECIFIER void FN(shrBigint)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned shiftAmount);
+SPECIFIER void FN(shr)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned shiftAmount);
 
 
 /**
@@ -172,7 +172,7 @@ SPECIFIER void FN(shrBigint)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned s
  * Words in little endian order.
  * The output can be the same as input.
  */
-SPECIFIER void FN(andBigint)(const BIGINT_TYPE *in1, const BIGINT_TYPE *in2, BIGINT_TYPE *out);
+SPECIFIER void FN(and)(const BIGINT_TYPE *in1, const BIGINT_TYPE *in2, BIGINT_TYPE *out);
 
 
 /**
@@ -185,7 +185,7 @@ SPECIFIER void FN(andBigint)(const BIGINT_TYPE *in1, const BIGINT_TYPE *in2, BIG
  * Words in little endian order.
  * The output can be the same as input.
  */
-SPECIFIER void FN(orBigint)(const BIGINT_TYPE *in1, const BIGINT_TYPE *in2, BIGINT_TYPE *out);
+SPECIFIER void FN(or)(const BIGINT_TYPE *in1, const BIGINT_TYPE *in2, BIGINT_TYPE *out);
 
 
 /**
@@ -197,7 +197,7 @@ SPECIFIER void FN(orBigint)(const BIGINT_TYPE *in1, const BIGINT_TYPE *in2, BIGI
  * Words in little endian order.
  * The output can be the same as input.
  */
-SPECIFIER void FN(xorBigint)(const BIGINT_TYPE *in1, const BIGINT_TYPE *in2, BIGINT_TYPE *out);
+SPECIFIER void FN(xor)(const BIGINT_TYPE *in1, const BIGINT_TYPE *in2, BIGINT_TYPE *out);
 
 
 /**
@@ -209,7 +209,7 @@ SPECIFIER void FN(xorBigint)(const BIGINT_TYPE *in1, const BIGINT_TYPE *in2, BIG
  *
  * Words in little endian order.
  */
-SPECIFIER int FN(lessThanBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b);
+SPECIFIER int FN(lessThan)(const BIGINT_TYPE *a, const BIGINT_TYPE *b);
 
 
 /**
@@ -221,7 +221,7 @@ SPECIFIER int FN(lessThanBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b);
  *
  * Words in little endian order.
  */
-SPECIFIER int FN(equalBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b);
+SPECIFIER int FN(equal)(const BIGINT_TYPE *a, const BIGINT_TYPE *b);
 
 
 /**
@@ -238,7 +238,7 @@ SPECIFIER int FN(equalBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b);
  * There is no check against zero division. Because it's expected that the user already does that.
  * Anyway at the end of the algorithm it is indicated by remainder == dividend and quotient == all 1 bits.
  */
-SPECIFIER void FN(divModBigint)(
+SPECIFIER void FN(divMod)(
     const BIGINT_TYPE *dividend,
     const BIGINT_TYPE *divisor,
     BIGINT_TYPE *quotient,
@@ -254,7 +254,7 @@ SPECIFIER void FN(divModBigint)(
  *
  * Returns non-zero if truncation occured during the calculation this also indicates the result is incorrect.
  */
-SPECIFIER int FN(modPowBigint)(
+SPECIFIER int FN(modPow)(
     const BIGINT_TYPE *base,
     const BIGINT_TYPE *exponent,
     const BIGINT_TYPE *modulo,
@@ -378,7 +378,7 @@ SPECIFIER int FN(isZero)(const BIGINT_TYPE *x)
 }
 
 
-SPECIFIER int FN(addBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result)
+SPECIFIER int FN(add)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result)
 {
     size_t i;
     int carry = 0;
@@ -407,7 +407,7 @@ SPECIFIER int FN(addBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
 }
 
 
-SPECIFIER int FN(subBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result)
+SPECIFIER int FN(sub)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result)
 {
     size_t i;
     int borrow = 0;
@@ -437,7 +437,7 @@ SPECIFIER int FN(subBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
 }
 
 
-SPECIFIER int FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result)
+SPECIFIER int FN(mul)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *result)
 {
     size_t i, j;
     size_t nA = GETNWORDS(a);
@@ -522,7 +522,7 @@ SPECIFIER int FN(mulBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
 }
 
 
-SPECIFIER void FN(shlBigint)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned shiftAmount)
+SPECIFIER void FN(shl)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned shiftAmount)
 {
     size_t dIndex = shiftAmount / WORD_BITS;
     size_t dShift = shiftAmount % WORD_BITS;
@@ -557,7 +557,7 @@ SPECIFIER void FN(shlBigint)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned s
 }
 
 
-SPECIFIER void FN(shrBigint)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned shiftAmount)
+SPECIFIER void FN(shr)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned shiftAmount)
 {
     size_t dIndex = shiftAmount / WORD_BITS;
     size_t dShift = shiftAmount % WORD_BITS;
@@ -593,7 +593,7 @@ SPECIFIER void FN(shrBigint)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned s
 }
 
 
-SPECIFIER void FN(andBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *out)
+SPECIFIER void FN(and)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *out)
 {
     size_t i;
     size_t nA = GETNWORDS(a);
@@ -614,7 +614,7 @@ SPECIFIER void FN(andBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_
 }
 
 
-SPECIFIER void FN(orBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *out)
+SPECIFIER void FN(or)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *out)
 {
     size_t i;
     size_t nA = GETNWORDS(a);
@@ -636,7 +636,7 @@ SPECIFIER void FN(orBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_T
 }
 
 
-SPECIFIER void FN(xorBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *out)
+SPECIFIER void FN(xor)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *out)
 {
     size_t i;
     size_t nA = GETNWORDS(a);
@@ -658,7 +658,7 @@ SPECIFIER void FN(xorBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_
 }
 
 
-SPECIFIER int FN(lessThanBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b)
+SPECIFIER int FN(lessThan)(const BIGINT_TYPE *a, const BIGINT_TYPE *b)
 {
     size_t nA = GETNWORDS(a);
     size_t nB = GETNWORDS(b);
@@ -676,7 +676,7 @@ SPECIFIER int FN(lessThanBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b)
 }
 
 
-SPECIFIER int FN(equalBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b)
+SPECIFIER int FN(equal)(const BIGINT_TYPE *a, const BIGINT_TYPE *b)
 {
     size_t nA = GETNWORDS(a);
     size_t nB = GETNWORDS(b);
@@ -693,7 +693,7 @@ SPECIFIER int FN(equalBigint)(const BIGINT_TYPE *a, const BIGINT_TYPE *b)
 }
 
 
-SPECIFIER void FN(divModBigint)(
+SPECIFIER void FN(divMod)(
     const BIGINT_TYPE *dividend,
     const BIGINT_TYPE *divisor,
     BIGINT_TYPE *quotient,
@@ -725,15 +725,15 @@ SPECIFIER void FN(divModBigint)(
         while (j --> 0)
         {
             /* Shift in the next digit of the dividend. */
-            FN(shlBigint)(remainder, remainder, 1);
+            FN(shl)(remainder, remainder, 1);
             SETWORD(remainder, 0, GETWORD(remainder, 0) | !!(dividendWord & (1 << j)));
 
             /* Check if we can add one to the output. */
 
-            if (!FN(lessThanBigint)(remainder, divisor))
+            if (!FN(lessThan)(remainder, divisor))
             {
                 if (quotient) quotientWord |= 1 << j;
-                FN(subBigint)(remainder, divisor, remainder);
+                FN(sub)(remainder, divisor, remainder);
             }
         }
         if (quotient) SETWORD(quotient, i, quotientWord);
@@ -756,7 +756,7 @@ SPECIFIER void FN(gcdEuclidean)(
 
 	for (;;)
 	{
-		FN(divModBigint)(&high, &low, NULL, gcd);
+		FN(divMod)(&high, &low, NULL, gcd);
 		if (FN(isZero(gcd)))
 		{
 			COPY_BIGINT(gcd, &low);
@@ -813,7 +813,7 @@ SPECIFIER void FN(gcdExtendedEuclidean)(
 	{
         BIGINT_TYPE tmp;
 
-		FN(divModBigint)(&high, &low, &quotient, gcd);
+		FN(divMod)(&high, &low, &quotient, gcd);
 		if (FN(isZero(gcd)))
 		{
 			COPY_BIGINT(gcd, &low);
@@ -823,12 +823,12 @@ SPECIFIER void FN(gcdExtendedEuclidean)(
 		}
 
         INIT_BIGINT(&tmp, GETNWORDS(&highHighCoeff));
-        FN(mulBigint)(&quotient, &lowHighCoeff, &tmp);
-        FN(subBigint)(&highHighCoeff, &tmp, &remHighCoeff);
+        FN(mul)(&quotient, &lowHighCoeff, &tmp);
+        FN(sub)(&highHighCoeff, &tmp, &remHighCoeff);
 
         INIT_BIGINT(&tmp, GETNWORDS(&highLowCoeff));
-        FN(mulBigint)(&quotient, &lowLowCoeff, &tmp);
-        FN(subBigint)(&highLowCoeff, &tmp, &remLowCoeff);
+        FN(mul)(&quotient, &lowLowCoeff, &tmp);
+        FN(sub)(&highLowCoeff, &tmp, &remLowCoeff);
 
 
 		COPY_BIGINT(&high, &low);
@@ -854,7 +854,7 @@ cleanup:
 }
 
 
-SPECIFIER int FN(modPowBigint)(
+SPECIFIER int FN(modPow)(
     const BIGINT_TYPE *base,
     const BIGINT_TYPE *exponent,
     const BIGINT_TYPE *modulo,
@@ -886,14 +886,14 @@ SPECIFIER int FN(modPowBigint)(
                 if (!canStart) continue;
 
                 /* Square the number. */
-                truncated |= FN(mulBigint)(&res, &res, &mulRes);
-                FN(divModBigint)(&mulRes, modulo, NULL, &res);
+                truncated |= FN(mul)(&res, &res, &mulRes);
+                FN(divMod)(&mulRes, modulo, NULL, &res);
 
                 /* Multiply*/
                 if (expWord & (1 << m))
                 {
-                    truncated |= FN(mulBigint)(&res, base, &mulRes);
-                    FN(divModBigint)(&mulRes, modulo, NULL, &res);
+                    truncated |= FN(mul)(&res, base, &mulRes);
+                    FN(divMod)(&mulRes, modulo, NULL, &res);
                 }
             }
         }

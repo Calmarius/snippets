@@ -14,7 +14,7 @@ typedef struct
     size_t n;
 } BigInt;
 
-void dumpBigint(const BigInt *bi, const char *header)
+void dump(const BigInt *bi, const char *header)
 {
 	size_t n = bi->n;
 
@@ -66,7 +66,7 @@ void dumpBigint(const BigInt *bi, const char *header)
 #define INIT_BIGINT(bi, nWords) {(bi)->n = (nWords); assert((bi)->n <= WORD_COUNT);}
 #define DEINIT_BIGINT(bi)
 #define ZERO_BIGINT(bi) (memset(bi, 0, (bi)->n * sizeof((bi)->words[0])))
-#define DUMP_BIGINT(x, y) dumpBigint(x, y)
+#define DUMP_BIGINT(x, y) dump(x, y)
 #define DECLARE_STUFF
 #define DEFINE_STUFF
 #include "bigint.h"
@@ -119,7 +119,7 @@ int main()
         BigInt C = {0};
 
         /* Normal addition */
-        carry = addBigint(&A, &B, &C);
+        carry = add(&A, &B, &C);
         assert(C.words[0] == 0x0FEDCBA9);
         assert(C.words[1] == 0x168ACF03);
         assert(C.words[2] == 0x69D0258C);
@@ -130,7 +130,7 @@ int main()
         B.n = 2;
 
         /* Test when one of the numbers is shorter. */
-        carry = addBigint(&A, &B, &C);
+        carry = add(&A, &B, &C);
         assert(C.words[0] == 0x0FEDCBA9);
         assert(C.words[1] == 0x168ACF03);
         assert(C.words[2] == 0x369CF259);
@@ -143,7 +143,7 @@ int main()
         BigInt B = {{0xFFFFFFFF, 0xEEEEEEEE, 0xDDDDDDDD, 0xCCCCCCCC}, 4};
         BigInt C = {0};
 
-        carry = addBigint(&A, &B, &C);
+        carry = add(&A, &B, &C);
         assert(C.words[0] == 0xFFFFFFFE);
         assert(C.words[1] == 0xDDDDDDDD);
         assert(C.words[2] == 0xBBBBBBBB);
@@ -152,7 +152,7 @@ int main()
         assert(carry == 1);
 
         /* Check if it works, when output matches input, (it should).*/
-        carry = addBigint(&A, &B, &A);
+        carry = add(&A, &B, &A);
         assert(A.words[0] == 0xFFFFFFFE);
         assert(A.words[1] == 0xDDDDDDDD);
         assert(A.words[2] == 0xBBBBBBBB);
@@ -168,7 +168,7 @@ int main()
 
         /* Exercise all sorts of carry and overflow. */
         C.n = 8;
-        res = mulBigint(&A, &B, &C);
+        res = mul(&A, &B, &C);
         assert(res == 0);
         assert(C.words[0] == 0x00000001);
         assert(C.words[1] == 0x00000000);
@@ -189,7 +189,7 @@ int main()
 
         /* Randomized test. */
         C.n = 8;
-        res = mulBigint(&A, &B, &C);
+        res = mul(&A, &B, &C);
         assert(res == 0);
         assert(C.words[0] == 0x70b88d78);
         assert(C.words[1] == 0xeb11e7f5);
@@ -203,7 +203,7 @@ int main()
 
         /* Test if truncation works in general. */
         C.n = 4;
-        res = mulBigint(&A, &B, &C);
+        res = mul(&A, &B, &C);
         assert(res == 1);
         assert(C.words[0] == 0x70b88d78);
         assert(C.words[1] == 0xeb11e7f5);
@@ -219,7 +219,7 @@ int main()
 
         /* Nontruncation case. The result fits. */
         C.n = 4;
-        res = mulBigint(&A, &B, &C);
+        res = mul(&A, &B, &C);
         assert(res == 0);
         assert(C.n == 4);
         assert(C.words[0] == 0x00000001);
@@ -235,7 +235,7 @@ int main()
 
         /* Truncation. Nonzero low word case. */
         C.n = 4;
-        res = mulBigint(&A, &B, &C);
+        res = mul(&A, &B, &C);
         assert(res == 1);
         assert(C.n == 4);
         assert(C.words[0] == 0x00000001);
@@ -251,7 +251,7 @@ int main()
 
         /* Truncation. Nonzero high word case. */
         C.n = 4;
-        res = mulBigint(&A, &B, &C);
+        res = mul(&A, &B, &C);
         assert(res == 1);
         assert(C.n == 4);
         assert(C.words[0] == 0xFFFFFFFE);
@@ -267,7 +267,7 @@ int main()
 
         /* Truncation. Carry to beyond case. */
         C.n = 4;
-        res = mulBigint(&A, &B, &C);
+        res = mul(&A, &B, &C);
         assert(res == 1);
         assert(C.n == 4);
         assert(C.words[0] == 0xFFFFFFFF);
@@ -281,7 +281,7 @@ int main()
         BigInt C = {0};
         int borrow;
 
-        borrow = subBigint(&A, &B, &C);
+        borrow = sub(&A, &B, &C);
 
         assert(C.words[0] == 0xFFFFFFFF);
         assert(C.words[1] == 0xFFFFFFFF);
@@ -295,7 +295,7 @@ int main()
         BigInt B = {{0x87654321, 0x87654321, 0x87654321, 0x87654321}, 4};
         int borrow;
 
-        borrow = subBigint(&A, &B, &A);
+        borrow = sub(&A, &B, &A);
 
         assert(A.words[0] == 0x8ACF1357);
         assert(A.words[1] == 0x8ACF1356);
@@ -308,49 +308,49 @@ int main()
         BigInt A = {{0x12345678, 0x22222222, 0x33333333, 0x44444444}, 4};
         BigInt B = {0};
 
-        shlBigint(&A, &B, 1);
+        shl(&A, &B, 1);
         assert(B.words[0] == 0x2468ACF0);
         assert(B.words[1] == 0x44444444);
         assert(B.words[2] == 0x66666666);
         assert(B.words[3] == 0x88888888);
         assert(B.n == 4);
 
-        shlBigint(&A, &B, 2);
+        shl(&A, &B, 2);
         assert(B.words[0] == 0x48D159E0);
         assert(B.words[1] == 0x88888888);
         assert(B.words[2] == 0xCCCCCCCC);
         assert(B.words[3] == 0x11111110);
         assert(B.n == 4);
 
-        shlBigint(&A, &B, 3);
+        shl(&A, &B, 3);
         assert(B.words[0] == 0x91A2B3C0);
         assert(B.words[1] == 0x11111110);
         assert(B.words[2] == 0x99999999);
         assert(B.words[3] == 0x22222221);
         assert(B.n == 4);
 
-        shlBigint(&A, &B, 4);
+        shl(&A, &B, 4);
         assert(B.words[0] == 0x23456780);
         assert(B.words[1] == 0x22222221);
         assert(B.words[2] == 0x33333332);
         assert(B.words[3] == 0x44444443);
         assert(B.n == 4);
 
-        shlBigint(&A, &B, 16);
+        shl(&A, &B, 16);
         assert(B.words[0] == 0x56780000);
         assert(B.words[1] == 0x22221234);
         assert(B.words[2] == 0x33332222);
         assert(B.words[3] == 0x44443333);
         assert(B.n == 4);
 
-        shlBigint(&A, &B, 32);
+        shl(&A, &B, 32);
         assert(B.words[0] == 0x00000000);
         assert(B.words[1] == 0x12345678);
         assert(B.words[2] == 0x22222222);
         assert(B.words[3] == 0x33333333);
         assert(B.n == 4);
 
-        shlBigint(&A, &B, 48);
+        shl(&A, &B, 48);
         assert(B.words[0] == 0x00000000);
         assert(B.words[1] == 0x56780000);
         assert(B.words[2] == 0x22221234);
@@ -358,7 +358,7 @@ int main()
         assert(B.n == 4);
 
         /* Test self shift */
-        shlBigint(&A, &A, 16);
+        shl(&A, &A, 16);
         assert(A.words[0] == 0x56780000);
         assert(A.words[1] == 0x22221234);
         assert(A.words[2] == 0x33332222);
@@ -369,49 +369,49 @@ int main()
         BigInt A = {{0x12345678, 0x22222222, 0x33333333, 0x44444444}, 4};
         BigInt B = {0};
 
-        shrBigint(&A, &B, 1);
+        shr(&A, &B, 1);
         assert(B.words[0] == 0x091A2B3C);
         assert(B.words[1] == 0x91111111);
         assert(B.words[2] == 0x19999999);
         assert(B.words[3] == 0x22222222);
         assert(B.n == 4);
 
-        shrBigint(&A, &B, 2);
+        shr(&A, &B, 2);
         assert(B.words[0] == 0x848D159E);
         assert(B.words[1] == 0xC8888888);
         assert(B.words[2] == 0x0CCCCCCC);
         assert(B.words[3] == 0x11111111);
         assert(B.n == 4);
 
-        shrBigint(&A, &B, 3);
+        shr(&A, &B, 3);
         assert(B.words[0] == 0x42468ACF);
         assert(B.words[1] == 0x64444444);
         assert(B.words[2] == 0x86666666);
         assert(B.words[3] == 0x08888888);
         assert(B.n == 4);
 
-        shrBigint(&A, &B, 4);
+        shr(&A, &B, 4);
         assert(B.words[0] == 0x21234567);
         assert(B.words[1] == 0x32222222);
         assert(B.words[2] == 0x43333333);
         assert(B.words[3] == 0x04444444);
         assert(B.n == 4);
 
-        shrBigint(&A, &B, 16);
+        shr(&A, &B, 16);
         assert(B.words[0] == 0x22221234);
         assert(B.words[1] == 0x33332222);
         assert(B.words[2] == 0x44443333);
         assert(B.words[3] == 0x00004444);
         assert(B.n == 4);
 
-        shrBigint(&A, &B, 32);
+        shr(&A, &B, 32);
         assert(B.words[0] == 0x22222222);
         assert(B.words[1] == 0x33333333);
         assert(B.words[2] == 0x44444444);
         assert(B.words[3] == 0x00000000);
         assert(B.n == 4);
 
-        shrBigint(&A, &B, 48);
+        shr(&A, &B, 48);
         assert(B.words[0] == 0x33332222);
         assert(B.words[1] == 0x44443333);
         assert(B.words[2] == 0x00004444);
@@ -419,7 +419,7 @@ int main()
         assert(B.n == 4);
 
         /* Test self shift */
-        shrBigint(&A, &A, 16);
+        shr(&A, &A, 16);
         assert(A.words[0] == 0x22221234);
         assert(A.words[1] == 0x33332222);
         assert(A.words[2] == 0x44443333);
@@ -437,7 +437,7 @@ int main()
         bakB = B;
         C.n = 4;
         /* Normal */
-        andBigint(&A, &B, &C);
+        and(&A, &B, &C);
         assert(C.words[0] == 0x00044448);
         assert(C.words[1] == 0x12301230);
         assert(C.words[2] == 0x05454101);
@@ -445,7 +445,7 @@ int main()
         assert(C.n == 4);
         /* Different lengths */
         B.n = 2;
-        andBigint(&A, &B, &C);
+        and(&A, &B, &C);
         assert(C.words[0] == 0x00044448);
         assert(C.words[1] == 0x12301230);
         assert(C.words[2] == 0x00000000);
@@ -453,7 +453,7 @@ int main()
         assert(C.n == 4);
         B.n = 4;
         /* Self assign */
-        andBigint(&bakA, &bakB, &bakA);
+        and(&bakA, &bakB, &bakA);
         assert(bakA.words[0] == 0x00044448);
         assert(bakA.words[1] == 0x12301230);
         assert(bakA.words[2] == 0x05454101);
@@ -464,7 +464,7 @@ int main()
         bakA = A;
         bakB = B;
         /* Normal */
-        orBigint(&A, &B, &C);
+        or(&A, &B, &C);
         assert(C.words[0] == 0xDEFCDEFC);
         assert(C.words[1] == 0xBBBFFFF3);
         assert(C.words[2] == 0x5FFDDFFD);
@@ -472,7 +472,7 @@ int main()
         assert(C.n == 4);
         /* Different lengths */
         B.n = 2;
-        orBigint(&A, &B, &C);
+        or(&A, &B, &C);
         assert(C.words[0] == 0xDEFCDEFC);
         assert(C.words[1] == 0xBBBFFFF3);
         assert(C.words[2] == 0x0FEDCBA9);
@@ -480,7 +480,7 @@ int main()
         assert(C.n == 4);
         B.n = 4;
         /* Self assign */
-        orBigint(&bakA, &bakB, &bakA);
+        or(&bakA, &bakB, &bakA);
         assert(bakA.words[0] == 0xDEFCDEFC);
         assert(bakA.words[1] == 0xBBBFFFF3);
         assert(bakA.words[2] == 0x5FFDDFFD);
@@ -491,7 +491,7 @@ int main()
         bakA = A;
         bakB = B;
         /* Normal */
-        xorBigint(&A, &B, &C);
+        xor(&A, &B, &C);
         assert(C.words[0] == 0xDEF89AB4);
         assert(C.words[1] == 0xA98FEDC3);
         assert(C.words[2] == 0x5AB89EFC);
@@ -499,7 +499,7 @@ int main()
         assert(C.n == 4);
         /* Different lengths */
         B.n = 2;
-        xorBigint(&A, &B, &C);
+        xor(&A, &B, &C);
         assert(C.words[0] == 0xDEF89AB4);
         assert(C.words[1] == 0xA98FEDC3);
         assert(C.words[2] == 0x0FEDCBA9);
@@ -507,7 +507,7 @@ int main()
         assert(C.n == 4);
         B.n = 4;
         /* Self assign */
-        xorBigint(&bakA, &bakB, &bakA);
+        xor(&bakA, &bakB, &bakA);
         assert(bakA.words[0] == 0xDEF89AB4);
         assert(bakA.words[1] == 0xA98FEDC3);
         assert(bakA.words[2] == 0x5AB89EFC);
@@ -520,13 +520,13 @@ int main()
         BigInt less = {{0x43573457, 0x98486223, 0x88236815, 0x99913852}, 4};
         BigInt greater = {{0x03573457, 0x08486223, 0x9823681A, 0x99913852}, 4};
 
-        assert(lessThanBigint(&less, &ref));
-        assert(!lessThanBigint(&greater, &ref));
-        assert(!lessThanBigint(&ref, &ref));
+        assert(lessThan(&less, &ref));
+        assert(!lessThan(&greater, &ref));
+        assert(!lessThan(&ref, &ref));
 
-        assert(!equalBigint(&less, &ref));
-        assert(!equalBigint(&greater, &ref));
-        assert(equalBigint(&ref, &ref));
+        assert(!equal(&less, &ref));
+        assert(!equal(&greater, &ref));
+        assert(equal(&ref, &ref));
     }
     {
         BigInt dividend = {{0x12345678, 0x9ABCDEF0, 0xCCCCCCCC, 0xDDDDDDDD}, 4};
@@ -534,7 +534,7 @@ int main()
         BigInt quotient = {0};
         BigInt remainder = {0};
 
-        divModBigint(&dividend, &divisor, &quotient, &remainder);
+        divMod(&dividend, &divisor, &quotient, &remainder);
 
         assert(quotient.words[0] == 0x14000001);
         assert(quotient.words[1] == 0xA0000000);
@@ -550,7 +550,7 @@ int main()
         memset(&remainder, 0, sizeof remainder);
 
         /* It should work even if we only want the remainder. */
-        divModBigint(&dividend, &divisor, NULL, &remainder);
+        divMod(&dividend, &divisor, NULL, &remainder);
         assert(remainder.words[0] == 0x4EBCDF01);
         assert(remainder.words[1] == 0x08DF0112);
         assert(remainder.words[2] == 0x00000000);
@@ -562,7 +562,7 @@ int main()
 		BigInt quotient, remainder;
 
 		/* Zero division */
-		divModBigint(&nonzero, &zero, &quotient, &remainder);
+		divMod(&nonzero, &zero, &quotient, &remainder);
 		assert(quotient.n == 2);
 		assert(quotient.words[0] == 0xFFFFFFFF);
 		assert(quotient.words[1] == 0xFFFFFFFF);
@@ -571,7 +571,7 @@ int main()
 		assert(remainder.words[1] == 0x00000000);
 
 		/* Dividing zero */
-		divModBigint(&zero, &nonzero, &quotient, &remainder);
+		divMod(&zero, &nonzero, &quotient, &remainder);
 		assert(quotient.n == 2);
 		assert(quotient.words[0] == 0x00000000);
 		assert(quotient.words[1] == 0x00000000);
@@ -692,25 +692,25 @@ int main()
         int ret;
 
         /* Normal case. */
-        ret = modPowBigint(&base, &exponent, &mod, &res);
+        ret = modPow(&base, &exponent, &mod, &res);
         assert(ret == 0);
         assert(res.n == 1);
         assert(res.words[0] == 1162261467); /* 3^19. */
 
         /* Zero exponent case */
-        ret = modPowBigint(&base, &zero, &mod, &res);
+        ret = modPow(&base, &zero, &mod, &res);
         assert(ret == 0);
         assert(res.n == 1);
         assert(res.words[0] == 1); /* 3^0 = 1. */
 
         /* Zero base case */
-        ret = modPowBigint(&zero, &exponent, &mod, &res);
+        ret = modPow(&zero, &exponent, &mod, &res);
         assert(ret == 0);
         assert(res.n == 1);
         assert(res.words[0] == 0); /* 0^19 = 0. */
 
         /* Zero modulus case. */
-        ret = modPowBigint(&base, &exponent, &zero, &res);
+        ret = modPow(&base, &exponent, &zero, &res);
         assert(ret == 0);
         assert(res.n == 1);
         assert(res.words[0] == 1162261467); /* 3^19. */
@@ -723,7 +723,7 @@ int main()
         int ret;
 
         /* Large exponent case */
-        ret = modPowBigint(&base, &exponent, &modulus, &res);
+        ret = modPow(&base, &exponent, &modulus, &res);
         assert(ret == 0);
         assert(res.n == 1);
         assert(res.words[0] == 880064);
