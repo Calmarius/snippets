@@ -64,6 +64,7 @@ void dump(const BigInt *bi, const char *header)
 #define NUM_THEORY
 #define COPY_BIGINT(dst, src) (*(dst) = *(src))
 #define INIT_BIGINT(bi, nWords) {(bi)->n = (nWords); assert((bi)->n <= WORD_COUNT);}
+#define INIT_EMPTY(bi)
 #define DEINIT_BIGINT(bi)
 #define ZERO_BIGINT(bi) (memset(bi, 0, (bi)->n * sizeof((bi)->words[0])))
 #define DUMP_BIGINT(x, y) dump(x, y)
@@ -727,6 +728,58 @@ int main()
         assert(ret == 0);
         assert(res.n == 1);
         assert(res.words[0] == 880064);
+    }
+    {
+        BigInt witness = {{1}, 1};
+        uint32_t primeList[] = {3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 997, 5471, 35381, 100019};
+        uint32_t compositeList[] = {4, 16, 25, 121, 4557, 45957, 215441};
+
+        BigInt toTest = {{0}, 1};
+        uint32_t i, j;
+        uint32_t nPasses;
+
+        /* For prime numbers all witnesses must pass the test. */
+        for (j = 1; j < sizeof(primeList) / sizeof(*primeList); j++)
+        {
+            toTest.words[0] = primeList[j];
+            for (i = 1; i < toTest.words[0]; i++)
+            {
+                if (!(i % 100))
+                {
+                    printf("Prime: %d %d %% done          \r", primeList[j], i*100 / toTest.words[0]);
+                    fflush(stdout);
+                }
+                witness.words[0] = i;
+                if (!mrTest(&toTest, &witness))
+                {
+                    printf("Testing %d, with withness: %d fails.\n", toTest.words[0], i);
+                    assert(!"Test failed!");
+                }
+            }
+        }
+
+        /* For composite numbers at most 25% of the test must pass. */
+        for (j = 1; j < sizeof(compositeList) / sizeof(*compositeList); j++)
+        {
+            toTest.words[0] = compositeList[j];
+
+            nPasses = 0;
+            for (i = 1; i < toTest.words[0]; i++)
+            {
+                if (!(i % 100))
+                {
+                    printf("Composite: %d %d %% done          \r", compositeList[j], i*100 / toTest.words[0]);
+                    fflush(stdout);
+                }
+                witness.words[0] = i;
+                if (mrTest(&toTest, &witness))
+                {
+                    nPasses++;
+                }
+            }
+            assert(4*nPasses <= toTest.words[0] - 1);
+        }
+        printf("\n");
     }
 
     printf("ALL is OK! %s %s\n", __DATE__, __TIME__);

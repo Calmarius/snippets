@@ -246,21 +246,6 @@ SPECIFIER void FN(divMod)(
 );
 
 
-/**
- * Performs integer exponentiation modulo a given number.
- *
- * base, exponent, modulo (in): The inputs.
- * result (out): The result. It will hold the same amount of words as the modulo holds.
- *
- * Returns non-zero if truncation occured during the calculation this also indicates the result is incorrect.
- */
-SPECIFIER int FN(modPow)(
-    const BIGINT_TYPE *base,
-    const BIGINT_TYPE *exponent,
-    const BIGINT_TYPE *modulo,
-    BIGINT_TYPE *result
-);
-
 #ifdef NUM_THEORY
 
 #ifndef COPY_BIGINT
@@ -279,6 +264,11 @@ SPECIFIER int FN(modPow)(
     #error Please define INIT_BIGINT as a way to initialize space in big integers.
 #endif
 
+#ifndef INIT_EMPTY
+    /* Example: #define INIT_EMPTY(bi) {(bi)->n = 0; (bi)->words = NULL; }*/
+    #error Please define INIT_EMPTY as a way to initialize empty big integers.
+#endif
+
 #ifndef DEINIT_BIGINT
     /* This is needed to deinit big integers cleanly. (only if memory management needed)*/
     #error Please define DEINIT_BIGINT as a way to clean up space in big integers.
@@ -288,7 +278,7 @@ SPECIFIER int FN(modPow)(
  * Calculates the greatest common divisor of the big integers.
  *
  * a, b (in): The two numbers of interest.
- * gcd (out): Their GCD.
+ * gcd (out): Their GCD. Must be deinitialized by the caller.
  *
  * The number of words in GCD matches the number of words in b.
  *
@@ -303,7 +293,7 @@ SPECIFIER void FN(gcdEuclidean)(
  * Solves the ax + by = gcd(a,b) equation on integer numbers.
  *
  * a, b (in): The two input parameters.
- * x, y, gcd (out): The two unknown and the coefficient, they will be calculated by the algorithm.
+ * x, y, gcd (out): The two unknown and the coefficient, they will be calculated by the algorithm. Must be deinitalized by the caller.
  *
  * The x, y and gcd is initialized by this function.
  * The x will have the same amount of words as b.
@@ -317,6 +307,35 @@ SPECIFIER void FN(gcdExtendedEuclidean)(
     BIGINT_TYPE *x,
     BIGINT_TYPE *y,
     BIGINT_TYPE *gcd
+);
+
+
+/**
+ * Performs integer exponentiation modulo a given number.
+ *
+ * base, exponent, modulo (in): The inputs.
+ * result (out): The result. It will hold the same amount of words as the modulo holds, must be deinitialized by the user.
+ *
+ * Returns non-zero if truncation occured during the calculation this also indicates the result is incorrect.
+ */
+SPECIFIER int FN(modPow)(
+    const BIGINT_TYPE *base,
+    const BIGINT_TYPE *exponent,
+    const BIGINT_TYPE *modulo,
+    BIGINT_TYPE *result
+);
+
+/**
+ * Performs Miller-Rabin primality test.
+ *
+ * toTest (in): The number to test. This number must be odd and must be larger than 2, otherwise the behavior of the function is not defined.
+ * witnessToTest (in): The witness to test with.
+ *
+ * Returns zero if `toTest` is composite. Returns non-zero if it may be prime.
+ */
+SPECIFIER int FN(mrTest)(
+    const BIGINT_TYPE *toTest,
+    const BIGINT_TYPE *witnessToTest
 );
 #endif
 
@@ -751,6 +770,8 @@ SPECIFIER void FN(gcdEuclidean)(
 {
 	BIGINT_TYPE high, low;
 
+    INIT_EMPTY(&low);
+    INIT_EMPTY(&high);
 	COPY_BIGINT(&high, a);
 	COPY_BIGINT(&low, b);
 
@@ -861,16 +882,15 @@ SPECIFIER int FN(modPow)(
     BIGINT_TYPE *result
 )
 {
-    BIGINT_TYPE res;
     BIGINT_TYPE mulRes;
     int canStart = 0;
     int truncated = 0;
 
-    INIT_BIGINT(&res, GETNWORDS(modulo));
+    INIT_BIGINT(result, GETNWORDS(modulo));
     INIT_BIGINT(&mulRes, 2*GETNWORDS(base));
 
-    ZERO_BIGINT(&res);
-    SETWORD(&res, 0, 1);
+    ZERO_BIGINT(result);
+    SETWORD(result, 0, 1);
 
     {
         size_t n = GETNWORDS(exponent);
@@ -886,26 +906,96 @@ SPECIFIER int FN(modPow)(
                 if (!canStart) continue;
 
                 /* Square the number. */
-                truncated |= FN(mul)(&res, &res, &mulRes);
-                FN(divMod)(&mulRes, modulo, NULL, &res);
+                truncated |= FN(mul)(result, result, &mulRes);
+                FN(divMod)(&mulRes, modulo, NULL, result);
 
                 /* Multiply*/
                 if (expWord & (1 << m))
                 {
-                    truncated |= FN(mul)(&res, base, &mulRes);
-                    FN(divMod)(&mulRes, modulo, NULL, &res);
+                    truncated |= FN(mul)(result, base, &mulRes);
+                    FN(divMod)(&mulRes, modulo, NULL, result);
                 }
             }
         }
-        COPY_BIGINT(result, &res);
     }
 
 goto cleanup;
 cleanup:
-    DEINIT_BIGINT(&res);
     DEINIT_BIGINT(&newRes);
     return truncated;
 }
+
+
+SPECIFIER int FN(mrTest)(
+    const BIGINT_TYPE *toTest,
+    const BIGINT_TYPE *witnessToTest
+)
+{
+    /* Here we perform the Miller-Rabin test:
+     *
+     * To test p (toTest) with a (withnessToTest)
+     * Let p-1 = 2^k d, where d is odd.
+     *
+     * Then if a^d ≡ 1 (mod p) OR a^{2^i d} ≡ -1 (mod p) (for any aplicable i), then there is 75% chance that p is prime.
+     *
+     * If it fails the test then p is definitely composite.
+     *
+     * For primes all `a` passes the test. For composite numbers only 25% of the numbers pass the test at most.
+     */
+    BIGINT_TYPE n;
+    BIGINT_TYPE pMinus1;
+    BIGINT_TYPE one;
+    BIGINT_TYPE modulus;
+    int retVal = 0; /* Default assumption: composite. */
+
+    COPY_BIGINT(&n, toTest);
+
+    INIT_BIGINT(&one, GETNWORDS(&n));
+    ZERO_BIGINT(&one);
+    SETWORD(&one, 0, 1);
+    INIT_EMPTY(&modulus);
+
+    FN(sub)(&n, &one, &n); /* n = p - 1*/
+    INIT_EMPTY(&pMinus1);
+    COPY_BIGINT(&pMinus1, &n);
+
+    /* Start with n = 2^{k-1}*d, then this loop go down till n = 2^d. */
+    do
+    {
+        FN(shr)(&n, &n, 1);
+        FN(modPow)(witnessToTest, &n, toTest, &modulus);
+        if (FN(equal)(&modulus, &pMinus1))
+        {
+            /* a^{2^i d} ≡ -1 (mod p). We have found a -1 modulus, the number may be prime. */
+            retVal = 1;
+            goto cleanup;
+        }
+        if (!FN(equal)(&modulus, &one))
+        {
+            /* If a^{2^j d} ≡ ±1 (mod p), for some j; then a^{2^i d} ≡ 1 (mod p) for i > j. Due to squaring.
+             * If this condition fails then that indicates that a^{2^j d} ≡ ±1 (mod p) cannot be true for any j.
+             * Thus indicating the number must be composite.
+             */
+            goto cleanup;
+        }
+
+    } while (!(GETWORD(&n, 0) & 1));
+    /* Finally try: a^d ≡ 1 (mod p), if it passes the number may be prime. */
+    FN(modPow)(witnessToTest, &n, toTest, &modulus);
+    if (FN(equal)(&modulus, &one))
+    {
+        retVal = 1;
+        goto cleanup;
+    }
+
+cleanup:
+    DEINIT_BIGINT(&n);
+    DEINIT_BIGINT(&one);
+    DEINIT_BIGINT(&modulus);
+    DEINIT_BIGINT(&nOrig);
+    return retVal;
+}
+
 
 
 
