@@ -65,7 +65,7 @@ void dump(const BigInt *bi, const char *header)
 #define WORD_BITS 32
 #define NUM_THEORY
 #define COPY_BIGINT(dst, src) {free((dst)->dummy); *(dst) = *(src); (dst)->dummy = malloc(10); }
-#define INIT_BIGINT(bi, nWords) {free((bi)->dummy); (bi)->n = (nWords); assert((bi)->n <= WORD_COUNT); (bi)->dummy = malloc(10); if (!(bi)->dummy) goto cleanup;}
+#define ALLOC_BIGINT(bi, nWords) {free((bi)->dummy); (bi)->n = (nWords); assert((bi)->n <= WORD_COUNT); (bi)->dummy = malloc(10); if (!(bi)->dummy) goto cleanup;}
 #define INIT_EMPTY(bi) {(bi)->n = 0; (bi)->dummy = NULL; }
 #define DEINIT_BIGINT(bi)  {free((bi)->dummy);}
 #define ZERO_BIGINT(bi) (memset(bi, 0, (bi)->n * sizeof((bi)->words[0])))

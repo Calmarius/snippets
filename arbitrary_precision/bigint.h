@@ -101,7 +101,7 @@ SPECIFIER int FN(isZero)(const BIGINT_TYPE *x);
  * Adds two big integers together.
  *
  * a,b (in): The two bigints to add.
- * result (out): The result, the number of the words in the result is the number of the words in the longer input (that has more words)
+ * result (in,out): The result. Must have the same number of words allocated as the longer input.
  *
  * The function works correctly if the output matches one of its inputs.
  *
@@ -114,7 +114,7 @@ SPECIFIER int FN(add)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *r
  * Subtracts two big integers.
  *
  * a,b (in): The two bigints to subtract (a-b) will be calculated.
- * result (out): The result, the number of the words in the result is the number of the words in the longer input (that has more words)
+ * result (in,out): The result. Must have the same number of words allocated as the longer input.
  *
  * The function works correctly if the output matches one of its inputs.
  *
@@ -128,7 +128,7 @@ SPECIFIER int FN(sub)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *r
  *
  * a (in): The first number.
  * b (in): The second number.
- * result (out): The result of the multiplication. Words in little endian order.
+ * result (in,out): The result of the multiplication. Words in little endian order.
  *      The number of the words in the result will be the sum of the number of the words in the two arguments.
  *      If it cannot hold that many words the result will be truncated.
  *
@@ -143,7 +143,7 @@ SPECIFIER int FN(mul)(const BIGINT_TYPE *a, const BIGINT_TYPE *b, BIGINT_TYPE *r
  * Shifts big integer left.
  *
  * in (in): The input big integer.
- * out (out): The output big integer.
+ * out (in,out): The output big integer. Must have the same number of words allocated as the input.
  * shiftAmount (in): The amount to shift.
  *
  * Words in little endian order.
@@ -156,7 +156,7 @@ SPECIFIER void FN(shl)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned shiftAm
  * Shifts big integer right. It's not sign preserving.
  *
  * in (in): The input big integer.
- * out (out): The output big integer.
+ * out (in,out): The output big integer. Must have the same number of words allocated as the input.
  * shiftAmount (in): The amount to shift.
  *
  * Words in little endian order.
@@ -169,7 +169,7 @@ SPECIFIER void FN(shr)(const BIGINT_TYPE *in, BIGINT_TYPE *out, unsigned shiftAm
  * Bitwise AND of two big integers.
  *
  * in1, in2 (in): The two arguments.
- * out (out): The result.
+ * out (in,out): The result. Must have the same number of words allocated as the longer input.
  *
  * Words in little endian order.
  * The output can be the same as input.
@@ -181,7 +181,7 @@ SPECIFIER void FN(and)(const BIGINT_TYPE *in1, const BIGINT_TYPE *in2, BIGINT_TY
  * Bitwise OR of two big integers.
  *
  * in1, in2 (in): The two arguments.
- * out (out): The result.
+ * out (in,out): The result. Must have the same number of words allocated as the longer input.
  *
  *
  * Words in little endian order.
@@ -194,7 +194,7 @@ SPECIFIER void FN(or)(const BIGINT_TYPE *in1, const BIGINT_TYPE *in2, BIGINT_TYP
  * Bitwise XOR of two big integers.
  *
  * in1, in2 (in): The two arguments.
- * out (out): The result.
+ * out (in, out): The result. Must have the same number of words allocated as the longer input.
  *
  * Words in little endian order.
  * The output can be the same as input.
@@ -230,10 +230,10 @@ SPECIFIER int FN(equal)(const BIGINT_TYPE *a, const BIGINT_TYPE *b);
  * Bigint long division algorithm.
  *
  * dividend, divisor (in): as their name suggests...
- * quotient (opt), remainder (out): as their name suggests... The quotient can be NULL if only the modulus is needed.
+ * quotient (opt, in, out), remainder (in, out): as their name suggests... The quotient can be NULL if only the modulus is needed.
  *
- * The quotient must be able to hold the same amount of words as the dividend.
- * The remainder must be able to hold the same amount of words as the divisor.
+ * The quotient must have the same number of words allocated as the dividend.
+ * The remainder must have the same number of words allocated as the divisor..
  *
  * Words in little endian order.
  *
@@ -250,29 +250,31 @@ SPECIFIER void FN(divMod)(
 
 #ifdef NUM_THEORY
 
-#ifndef COPY_BIGINT
-    /* Example: #define COPY_BIGINT(dst, src) *dst = *src */
-    /* This macro should perform the copying of big ints it should make sure the previous content in destination is freed when needed.
-     * On failed allocation the macro should jump to the 'cleanup' label, and possibly set a thread local error variable.
+/* These functions create big integers within them so the user must provide these macros*/
+
+#ifndef COPY_BIGINT/*(dst, src)*/
+    /* Example: #define COPY_BIGINT(dst, src) {(dst)->words = realloc((dst)->words, (src)->n*sizeof((src)->words[0])); memcpy((dst)->words, (src)->words, (src)->n*sizeof((src)->words[0])); (dst)->n = (src)->n; } */
+    /* This macro should cleanup the previous content and deep copy the contents of the source.
      */
     #error Please define COPY_BIGINT as a means to copy big integers.
 #endif
 
-#ifndef INIT_BIGINT
-    /* Example: #define INIT_BIGINT(bi, nWords) ((bi)->n = (nWords);*/
-    /* This (re)initializes big ints to hold the specified amount of words. It should release the previous content if needed.
-     * On failed allocation the macro should jump to the 'cleanup' label, and possibly set a thread local error variable.
+#ifndef ALLOC_BIGINT/*(bigint, nWords)*/
+    /* Example: #define ALLOC_BIGINT(bi, nWords) {(bi)->n = (nWords); (bi)->words = malloc(nWords*sizeof(*(bi)->words)); }*/
+    /* This macro should clean up the previous content and allocate the requested amount of words.
      */
-    #error Please define INIT_BIGINT as a way to initialize space in big integers.
+    #error Please define ALLOC_BIGINT as a way to initialize space in big integers.
 #endif
 
-#ifndef INIT_EMPTY
+#ifndef INIT_EMPTY/*(bigint)*/
     /* Example: #define INIT_EMPTY(bi) {(bi)->n = 0; (bi)->words = NULL; }*/
+    /* This macro should initialize and empty bigint that can be cleaned up without problems. Failure to cleanup an empty bigint shouldn't cause resource leaks. */
     #error Please define INIT_EMPTY as a way to initialize empty big integers.
 #endif
 
-#ifndef DEINIT_BIGINT
-    /* This is needed to deinit big integers cleanly. (only if memory management needed)*/
+#ifndef DEINIT_BIGINT/*(bigint)*/
+    /* Example: #define DEINIT_BIGINT(bi) {free((bi)->words);} */
+    /* The purpose of this macro is to clean up big integers, to avoid resource leaks. */
     #error Please define DEINIT_BIGINT as a way to clean up space in big integers.
 #endif
 
@@ -829,15 +831,15 @@ SPECIFIER void FN(gcdExtendedEuclidean)(
 	COPY_BIGINT(&high, a);
 	COPY_BIGINT(&low, b);
 
-    INIT_BIGINT(&highHighCoeff, nB);
-    INIT_BIGINT(&lowHighCoeff, nB);
-    INIT_BIGINT(&remHighCoeff, nB);
-    INIT_BIGINT(gcd, nB);
+    ALLOC_BIGINT(&highHighCoeff, nB);
+    ALLOC_BIGINT(&lowHighCoeff, nB);
+    ALLOC_BIGINT(&remHighCoeff, nB);
+    ALLOC_BIGINT(gcd, nB);
 
-    INIT_BIGINT(&quotient, nA);
-    INIT_BIGINT(&highLowCoeff, nA);
-    INIT_BIGINT(&lowLowCoeff, nA);
-    INIT_BIGINT(&remLowCoeff, nA);
+    ALLOC_BIGINT(&quotient, nA);
+    ALLOC_BIGINT(&highLowCoeff, nA);
+    ALLOC_BIGINT(&lowLowCoeff, nA);
+    ALLOC_BIGINT(&remLowCoeff, nA);
 
     ZERO_BIGINT(&highLowCoeff);
     ZERO_BIGINT(&lowLowCoeff);
@@ -860,11 +862,11 @@ SPECIFIER void FN(gcdExtendedEuclidean)(
 			goto cleanup;
 		}
 
-        INIT_BIGINT(&tmp, GETNWORDS(&highHighCoeff));
+        ALLOC_BIGINT(&tmp, GETNWORDS(&highHighCoeff));
         FN(mul)(&quotient, &lowHighCoeff, &tmp);
         FN(sub)(&highHighCoeff, &tmp, &remHighCoeff);
 
-        INIT_BIGINT(&tmp, GETNWORDS(&highLowCoeff));
+        ALLOC_BIGINT(&tmp, GETNWORDS(&highLowCoeff));
         FN(mul)(&quotient, &lowLowCoeff, &tmp);
         FN(sub)(&highLowCoeff, &tmp, &remLowCoeff);
 
@@ -908,8 +910,8 @@ SPECIFIER int FN(modPow)(
     INIT_EMPTY(result);
     INIT_EMPTY(&mulRes);
 
-    INIT_BIGINT(result, GETNWORDS(modulo));
-    INIT_BIGINT(&mulRes, 2*GETNWORDS(base));
+    ALLOC_BIGINT(result, GETNWORDS(modulo));
+    ALLOC_BIGINT(&mulRes, 2*GETNWORDS(base));
 
     ZERO_BIGINT(result);
     SETWORD(result, 0, 1);
@@ -977,7 +979,7 @@ SPECIFIER int FN(mrTest)(
 
     COPY_BIGINT(&n, toTest);
 
-    INIT_BIGINT(&one, GETNWORDS(&n));
+    ALLOC_BIGINT(&one, GETNWORDS(&n));
     ZERO_BIGINT(&one);
     SETWORD(&one, 0, 1);
     INIT_EMPTY(&modulus);
@@ -1048,7 +1050,7 @@ cleanup:
 #undef HALF_WORD_MASK
 #undef NUM_THEORY
 #undef COPY_BIGINT
-#undef INIT_BIGINT
+#undef ALLOC_BIGINT
 #undef DUMP_BIGINT
 #undef ZERO_BIGINT
 
