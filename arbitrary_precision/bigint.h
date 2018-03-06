@@ -1,6 +1,8 @@
 /**
  * Basic arithmetic operations and various theory functions on arbitrary precision integers.
  * The functions are operating on UNSIGNED big integers, unless noted otherwise.
+ *
+ * It also contains some number theory routines.
  */
 
 
@@ -805,8 +807,24 @@ SPECIFIER void FN(gcdExtendedEuclidean)(
     BIGINT_TYPE lowHighCoeff, lowLowCoeff;
     BIGINT_TYPE remHighCoeff, remLowCoeff;
     BIGINT_TYPE quotient;
+    BIGINT_TYPE tmp;
+
     size_t nA = GETNWORDS(a);
     size_t nB = GETNWORDS(b);
+
+    INIT_EMPTY(x);
+    INIT_EMPTY(y);
+    INIT_EMPTY(gcd);
+    INIT_EMPTY(&high);
+    INIT_EMPTY(&low);
+    INIT_EMPTY(&highHighCoeff);
+    INIT_EMPTY(&highLowCoeff);
+    INIT_EMPTY(&lowHighCoeff);
+    INIT_EMPTY(&lowLowCoeff);
+    INIT_EMPTY(&remHighCoeff);
+    INIT_EMPTY(&remLowCoeff);
+    INIT_EMPTY(&quotient);
+    INIT_EMPTY(&tmp);
 
 	COPY_BIGINT(&high, a);
 	COPY_BIGINT(&low, b);
@@ -814,8 +832,9 @@ SPECIFIER void FN(gcdExtendedEuclidean)(
     INIT_BIGINT(&highHighCoeff, nB);
     INIT_BIGINT(&lowHighCoeff, nB);
     INIT_BIGINT(&remHighCoeff, nB);
-    INIT_BIGINT(&quotient, nA);
+    INIT_BIGINT(gcd, nB);
 
+    INIT_BIGINT(&quotient, nA);
     INIT_BIGINT(&highLowCoeff, nA);
     INIT_BIGINT(&lowLowCoeff, nA);
     INIT_BIGINT(&remLowCoeff, nA);
@@ -832,8 +851,6 @@ SPECIFIER void FN(gcdExtendedEuclidean)(
 
 	for (;;)
 	{
-        BIGINT_TYPE tmp;
-
 		FN(divMod)(&high, &low, &quotient, gcd);
 		if (FN(isZero(gcd)))
 		{
@@ -872,6 +889,8 @@ cleanup:
 
 	DEINIT_BIGINT(&high);
 	DEINIT_BIGINT(&low);
+
+    DEINIT_BIGINT(&tmp);
 }
 
 
@@ -885,6 +904,9 @@ SPECIFIER int FN(modPow)(
     BIGINT_TYPE mulRes;
     int canStart = 0;
     int truncated = 0;
+
+    INIT_EMPTY(result);
+    INIT_EMPTY(&mulRes);
 
     INIT_BIGINT(result, GETNWORDS(modulo));
     INIT_BIGINT(&mulRes, 2*GETNWORDS(base));
@@ -921,7 +943,7 @@ SPECIFIER int FN(modPow)(
 
 goto cleanup;
 cleanup:
-    DEINIT_BIGINT(&newRes);
+    DEINIT_BIGINT(&mulRes);
     return truncated;
 }
 
@@ -948,6 +970,11 @@ SPECIFIER int FN(mrTest)(
     BIGINT_TYPE modulus;
     int retVal = 0; /* Default assumption: composite. */
 
+    INIT_EMPTY(&n);
+    INIT_EMPTY(&pMinus1);
+    INIT_EMPTY(&one);
+    INIT_EMPTY(&modulus);
+
     COPY_BIGINT(&n, toTest);
 
     INIT_BIGINT(&one, GETNWORDS(&n));
@@ -963,6 +990,7 @@ SPECIFIER int FN(mrTest)(
     do
     {
         FN(shr)(&n, &n, 1);
+        DEINIT_BIGINT(&modulus);
         FN(modPow)(witnessToTest, &n, toTest, &modulus);
         if (FN(equal)(&modulus, &pMinus1))
         {
@@ -981,6 +1009,7 @@ SPECIFIER int FN(mrTest)(
 
     } while (!(GETWORD(&n, 0) & 1));
     /* Finally try: a^d ≡ 1 (mod p), if it passes the number may be prime. */
+    DEINIT_BIGINT(&modulus);
     FN(modPow)(witnessToTest, &n, toTest, &modulus);
     if (FN(equal)(&modulus, &one))
     {
@@ -992,7 +1021,7 @@ cleanup:
     DEINIT_BIGINT(&n);
     DEINIT_BIGINT(&one);
     DEINIT_BIGINT(&modulus);
-    DEINIT_BIGINT(&nOrig);
+    DEINIT_BIGINT(&pMinus1);
     return retVal;
 }
 

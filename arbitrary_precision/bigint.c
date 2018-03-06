@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define WORD_COUNT 8
 
@@ -12,6 +13,7 @@ typedef struct
 {
     uint32_t words[WORD_COUNT];
     size_t n;
+    void *dummy; /* Something to alert about memory leaks in valgrind. */
 } BigInt;
 
 void dump(const BigInt *bi, const char *header)
@@ -62,10 +64,10 @@ void dump(const BigInt *bi, const char *header)
 #define WORD_TYPE uint32_t
 #define WORD_BITS 32
 #define NUM_THEORY
-#define COPY_BIGINT(dst, src) (*(dst) = *(src))
-#define INIT_BIGINT(bi, nWords) {(bi)->n = (nWords); assert((bi)->n <= WORD_COUNT);}
-#define INIT_EMPTY(bi)
-#define DEINIT_BIGINT(bi)
+#define COPY_BIGINT(dst, src) {free((dst)->dummy); *(dst) = *(src); (dst)->dummy = malloc(10); }
+#define INIT_BIGINT(bi, nWords) {free((bi)->dummy); (bi)->n = (nWords); assert((bi)->n <= WORD_COUNT); (bi)->dummy = malloc(10); if (!(bi)->dummy) goto cleanup;}
+#define INIT_EMPTY(bi) {(bi)->n = 0; (bi)->dummy = NULL; }
+#define DEINIT_BIGINT(bi)  {free((bi)->dummy);}
 #define ZERO_BIGINT(bi) (memset(bi, 0, (bi)->n * sizeof((bi)->words[0])))
 #define DUMP_BIGINT(x, y) dump(x, y)
 #define DECLARE_STUFF
@@ -108,15 +110,17 @@ int main()
     assert(low == 1);
 
 	{
-		BigInt zero = {{0, 0, 0, 0}, 4};
-		BigInt nonzero = {{0, 1, 0, 0}, 4};
+		BigInt zero = {{0, 0, 0, 0}, 4, NULL};
+		BigInt nonzero = {{0, 1, 0, 0}, 4, NULL};
 
 		assert(isZero(&zero));
 		assert(!isZero(&nonzero));
+        free(zero.dummy);
+        free(nonzero.dummy);
 	}
     {
-        BigInt A = {{0x87654321, 0x2468ACE0, 0x369CF258, 0x48C048C0}, 4};
-        BigInt B = {{0x88888888, 0xF2222222, 0x33333333, 0xC4444444}, 4};
+        BigInt A = {{0x87654321, 0x2468ACE0, 0x369CF258, 0x48C048C0}, 4, NULL};
+        BigInt B = {{0x88888888, 0xF2222222, 0x33333333, 0xC4444444}, 4, NULL};
         BigInt C = {0};
 
         /* Normal addition */
@@ -140,8 +144,8 @@ int main()
         assert(carry == 0);
     }
     {
-        BigInt A = {{0xFFFFFFFF, 0xEEEEEEEE, 0xDDDDDDDD, 0xCCCCCCCC}, 4};
-        BigInt B = {{0xFFFFFFFF, 0xEEEEEEEE, 0xDDDDDDDD, 0xCCCCCCCC}, 4};
+        BigInt A = {{0xFFFFFFFF, 0xEEEEEEEE, 0xDDDDDDDD, 0xCCCCCCCC}, 4, NULL};
+        BigInt B = {{0xFFFFFFFF, 0xEEEEEEEE, 0xDDDDDDDD, 0xCCCCCCCC}, 4, NULL};
         BigInt C = {0};
 
         carry = add(&A, &B, &C);
@@ -162,8 +166,8 @@ int main()
         assert(carry == 1);
     }
     {
-        BigInt A = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
-        BigInt B = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
+        BigInt A = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4, NULL};
+        BigInt B = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4, NULL};
         BigInt C = {0};
         int res;
 
@@ -183,8 +187,8 @@ int main()
     }
 
     {
-        BigInt A = {{0x12345678, 0x12345678, 0x12345678, 0x12345678}, 4};
-        BigInt B = {{0x87654321, 0x87654321, 0x87654321, 0x87654321}, 4};
+        BigInt A = {{0x12345678, 0x12345678, 0x12345678, 0x12345678}, 4, NULL};
+        BigInt B = {{0x87654321, 0x87654321, 0x87654321, 0x87654321}, 4, NULL};
         BigInt C = {0};
         int res;
 
@@ -213,8 +217,8 @@ int main()
         assert(C.n == 4);
     }
     {
-        BigInt A = {{1, 1, 0, 0}, 4};
-        BigInt B = {{1, 1, 1, 0}, 4};
+        BigInt A = {{1, 1, 0, 0}, 4, NULL};
+        BigInt B = {{1, 1, 1, 0}, 4, NULL};
         BigInt C;
         int res;
 
@@ -229,8 +233,8 @@ int main()
         assert(C.words[3] == 0x00000001);
     }
     {
-        BigInt A = {{1, 1, 1, 1}, 4};
-        BigInt B = {{1, 1, 1, 1}, 4};
+        BigInt A = {{1, 1, 1, 1}, 4, NULL};
+        BigInt B = {{1, 1, 1, 1}, 4, NULL};
         BigInt C;
         int res;
 
@@ -245,8 +249,8 @@ int main()
         assert(C.words[3] == 0x00000004);
     }
     {
-        BigInt A = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
-        BigInt B = {{2, 0, 0, 0}, 4};
+        BigInt A = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4, NULL};
+        BigInt B = {{2, 0, 0, 0}, 4, NULL};
         BigInt C;
         int res;
 
@@ -261,8 +265,8 @@ int main()
         assert(C.words[3] == 0xFFFFFFFF);
     }
     {
-        BigInt A = {{0x00000001, 0x00000001, 0, 0}, 4};
-        BigInt B = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
+        BigInt A = {{0x00000001, 0x00000001, 0, 0}, 4, NULL};
+        BigInt B = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4, NULL};
         BigInt C;
         int res;
 
@@ -277,8 +281,8 @@ int main()
         assert(C.words[3] == 0xFFFFFFFF);
     }
     {
-        BigInt A = {{0xFFFFFFFE, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
-        BigInt B = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4};
+        BigInt A = {{0xFFFFFFFE, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4, NULL};
+        BigInt B = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4, NULL};
         BigInt C = {0};
         int borrow;
 
@@ -292,8 +296,8 @@ int main()
         assert(borrow == 1);
     }
     {
-        BigInt A = {{0x12345678, 0x12345678, 0x12345678, 0x12345678}, 4};
-        BigInt B = {{0x87654321, 0x87654321, 0x87654321, 0x87654321}, 4};
+        BigInt A = {{0x12345678, 0x12345678, 0x12345678, 0x12345678}, 4, NULL};
+        BigInt B = {{0x87654321, 0x87654321, 0x87654321, 0x87654321}, 4, NULL};
         int borrow;
 
         borrow = sub(&A, &B, &A);
@@ -306,7 +310,7 @@ int main()
         assert(borrow == 1);
     }
     {
-        BigInt A = {{0x12345678, 0x22222222, 0x33333333, 0x44444444}, 4};
+        BigInt A = {{0x12345678, 0x22222222, 0x33333333, 0x44444444}, 4, NULL};
         BigInt B = {0};
 
         shl(&A, &B, 1);
@@ -367,7 +371,7 @@ int main()
         assert(A.n == 4);
     }
     {
-        BigInt A = {{0x12345678, 0x22222222, 0x33333333, 0x44444444}, 4};
+        BigInt A = {{0x12345678, 0x22222222, 0x33333333, 0x44444444}, 4, NULL};
         BigInt B = {0};
 
         shr(&A, &B, 1);
@@ -426,10 +430,13 @@ int main()
         assert(A.words[2] == 0x44443333);
         assert(A.words[3] == 0x00004444);
         assert(A.n == 4);
+
+        free(A.dummy);
+        free(B.dummy);
     }
     {
-        BigInt A = {{0x12345678, 0x9ABCDEF0, 0x0FEDCBA9, 0x87654321}, 4};
-        BigInt B = {{0xCCCCCCCC, 0x33333333, 0x55555555, 0xAAAAAAAA}, 4};
+        BigInt A = {{0x12345678, 0x9ABCDEF0, 0x0FEDCBA9, 0x87654321}, 4, NULL};
+        BigInt B = {{0xCCCCCCCC, 0x33333333, 0x55555555, 0xAAAAAAAA}, 4, NULL};
         BigInt C = {0};
         BigInt bakA, bakB;
 
@@ -517,9 +524,9 @@ int main()
 
     }
     {
-        BigInt ref = {{0x43573457, 0x98486223, 0x98236815, 0x99913852}, 4};
-        BigInt less = {{0x43573457, 0x98486223, 0x88236815, 0x99913852}, 4};
-        BigInt greater = {{0x03573457, 0x08486223, 0x9823681A, 0x99913852}, 4};
+        BigInt ref = {{0x43573457, 0x98486223, 0x98236815, 0x99913852}, 4, NULL};
+        BigInt less = {{0x43573457, 0x98486223, 0x88236815, 0x99913852}, 4, NULL};
+        BigInt greater = {{0x03573457, 0x08486223, 0x9823681A, 0x99913852}, 4, NULL};
 
         assert(lessThan(&less, &ref));
         assert(!lessThan(&greater, &ref));
@@ -530,8 +537,8 @@ int main()
         assert(equal(&ref, &ref));
     }
     {
-        BigInt dividend = {{0x12345678, 0x9ABCDEF0, 0xCCCCCCCC, 0xDDDDDDDD}, 4};
-        BigInt divisor = {{0x77777777, 0x88888888, 0x00000000, 0x00000000}, 4};
+        BigInt dividend = {{0x12345678, 0x9ABCDEF0, 0xCCCCCCCC, 0xDDDDDDDD}, 4, NULL};
+        BigInt divisor = {{0x77777777, 0x88888888, 0x00000000, 0x00000000}, 4, NULL};
         BigInt quotient = {0};
         BigInt remainder = {0};
 
@@ -558,8 +565,8 @@ int main()
         assert(remainder.words[3] == 0x00000000);
     }
 	{
-		BigInt zero = {{0}, 2};
-		BigInt nonzero = {{0x666, 0}, 2};
+		BigInt zero = {{0}, 2, NULL};
+		BigInt nonzero = {{0x666, 0}, 2, NULL};
 		BigInt quotient, remainder;
 
 		/* Zero division */
@@ -582,12 +589,12 @@ int main()
 		assert(remainder.words[1] == 0x00000000);
 	}
 	{
-		BigInt A = {{857656800}, 1};
-		BigInt B = {{338888693}, 1};
+		BigInt A = {{857656800}, 1, NULL};
+		BigInt B = {{338888693}, 1, NULL};
 		BigInt gcd = {0};
-		BigInt bigA = {{0x8cc61a06, 0xbfe2f415, 0x09e0bd38}, 3}; /* 3057058046095595223711619590 */
-		BigInt bigB = {{0x508f2706, 0xc06af417, 0x006fb794}, 3}; /* 135057703026874676266608390 */
-		BigInt zero = {{0, 0}, 2};
+		BigInt bigA = {{0x8cc61a06, 0xbfe2f415, 0x09e0bd38}, 3, NULL}; /* 3057058046095595223711619590 */
+		BigInt bigB = {{0x508f2706, 0xc06af417, 0x006fb794}, 3, NULL}; /* 135057703026874676266608390 */
+		BigInt zero = {{0, 0}, 2, NULL};
 
 		/* Quick sanity to see the algorithm works.*/
 		gcdEuclidean(&A, &B, &gcd);
@@ -612,11 +619,18 @@ int main()
 		assert(gcd.words[0] == 0x8cc61a06);
 		assert(gcd.words[1] == 0xbfe2f415);
 		assert(gcd.words[2] == 0x09e0bd38);
+
+        free(A.dummy);
+        free(B.dummy);
+        free(gcd.dummy);
+        free(bigA.dummy);
+        free(bigB.dummy);
+        free(zero.dummy);
 	}
     {
         /* Quick sanity to see the extended euclidean works.*/
-        BigInt A = {{2310}, 1};
-        BigInt B = {{17017}, 1};
+        BigInt A = {{2310}, 1, NULL};
+        BigInt B = {{17017}, 1, NULL};
         BigInt X, Y, GCD;
 
         gcdExtendedEuclidean(&A, &B, &X, &Y, &GCD);
@@ -626,10 +640,16 @@ int main()
         assert(Y.words[0] == 11);
         assert(GCD.n == 1);
         assert(GCD.words[0] == 77);
+
+        free(A.dummy);
+        free(B.dummy);
+        free(X.dummy);
+        free(Y.dummy);
+        free(GCD.dummy);
     }
     {
-        BigInt A = {{0x36547d80, 0x163a263d }, 2}; /* 1601634661830000000 */
-        BigInt B = {{91091}, 1};
+        BigInt A = {{0x36547d80, 0x163a263d }, 2, NULL}; /* 1601634661830000000 */
+        BigInt B = {{91091}, 1, NULL};
         BigInt X, Y, GCD;
 
         gcdExtendedEuclidean(&A, &B, &X, &Y, &GCD);
@@ -641,6 +661,9 @@ int main()
         assert(GCD.n == 1);
         assert(GCD.words[0] == 49);
 
+        free(X.dummy);
+        free(Y.dummy);
+        free(GCD.dummy);
         /* Reverse the arguments to see how it affect the word count: */
         gcdExtendedEuclidean(&B, &A, &X, &Y, &GCD);
 
@@ -652,10 +675,16 @@ int main()
         assert(GCD.n == 2);
         assert(GCD.words[0] == 49);
         assert(GCD.words[1] == 0);
+
+        free(A.dummy);
+        free(B.dummy);
+        free(X.dummy);
+        free(Y.dummy);
+        free(GCD.dummy);
     }
     {
-        BigInt zero = {{0}, 2};
-        BigInt nonzero = {{42}, 1};
+        BigInt zero = {{0}, 2, NULL};
+        BigInt nonzero = {{42}, 1, NULL};
         BigInt X, Y, GCD;
 
         gcdExtendedEuclidean(&zero, &nonzero, &X, &Y, &GCD);
@@ -670,6 +699,9 @@ int main()
         assert(Y.words[0] == 1);
         assert(Y.words[1] == 0);
 
+        free(X.dummy);
+        free(Y.dummy);
+        free(GCD.dummy);
         /* Zero division testcase */
         /* 42x + 0y = 42 will be solvesd. Both X and Y will be 1.*/
         gcdExtendedEuclidean(&nonzero, &zero, &X, &Y, &GCD);
@@ -683,12 +715,18 @@ int main()
 
         assert(Y.n == 1);
         assert(Y.words[0] == 1);
+
+        free(zero.dummy);
+        free(nonzero.dummy);
+        free(X.dummy);
+        free(Y.dummy);
+        free(GCD.dummy);
     }
     {
-        BigInt base = {{3, 0}, 2};
-        BigInt exponent = {{19}, 1};
-        BigInt mod = {{2000000000}, 1};
-        BigInt zero = {{0}, 1};
+        BigInt base = {{3, 0}, 2, NULL};
+        BigInt exponent = {{19}, 1, NULL};
+        BigInt mod = {{2000000000}, 1, NULL};
+        BigInt zero = {{0}, 1, NULL};
         BigInt res;
         int ret;
 
@@ -697,29 +735,41 @@ int main()
         assert(ret == 0);
         assert(res.n == 1);
         assert(res.words[0] == 1162261467); /* 3^19. */
+        free(mod.dummy);
+        free(res.dummy);
 
         /* Zero exponent case */
         ret = modPow(&base, &zero, &mod, &res);
         assert(ret == 0);
         assert(res.n == 1);
         assert(res.words[0] == 1); /* 3^0 = 1. */
+        free(mod.dummy);
+        free(res.dummy);
 
         /* Zero base case */
         ret = modPow(&zero, &exponent, &mod, &res);
         assert(ret == 0);
         assert(res.n == 1);
         assert(res.words[0] == 0); /* 0^19 = 0. */
+        free(mod.dummy);
+        free(res.dummy);
 
         /* Zero modulus case. */
         ret = modPow(&base, &exponent, &zero, &res);
         assert(ret == 0);
         assert(res.n == 1);
         assert(res.words[0] == 1162261467); /* 3^19. */
+        free(zero.dummy);
+        free(res.dummy);
+
+        free(base.dummy);
+        free(exponent.dummy);
+        free(mod.dummy);
     }
     {
-        BigInt base = {{42, 0}, 2};
-        BigInt exponent = {{4242424242}, 1};
-        BigInt modulus = {{1000000}, 1};
+        BigInt base = {{42, 0}, 2, NULL};
+        BigInt exponent = {{4242424242}, 1, NULL};
+        BigInt modulus = {{1000000}, 1, NULL};
         BigInt res;
         int ret;
 
@@ -728,13 +778,18 @@ int main()
         assert(ret == 0);
         assert(res.n == 1);
         assert(res.words[0] == 880064);
+
+        free(base.dummy);
+        free(exponent.dummy);
+        free(modulus.dummy);
+        free(res.dummy);
     }
     {
-        BigInt witness = {{1}, 1};
-        uint32_t primeList[] = {3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 997, 5471, 35381, 100019};
-        uint32_t compositeList[] = {4, 16, 25, 121, 4557, 45957, 215441};
+        BigInt witness = {{1}, 1, NULL};
+        uint32_t primeList[] = {3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 997/*, 5471, 35381, 100019*/};
+        uint32_t compositeList[] = {4, 16, 25, 121, 4557/*, 45957, 215441*/};
 
-        BigInt toTest = {{0}, 1};
+        BigInt toTest = {{0}, 1, NULL};
         uint32_t i, j;
         uint32_t nPasses;
 
@@ -780,6 +835,9 @@ int main()
             assert(4*nPasses <= toTest.words[0] - 1);
         }
         printf("\n");
+
+        free(witness.dummy);
+        free(toTest.dummy);
     }
 
     printf("ALL is OK! %s %s\n", __DATE__, __TIME__);
