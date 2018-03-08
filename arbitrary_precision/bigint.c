@@ -567,10 +567,7 @@ int main()
     {
         BigInt zero = {{0}, 2, NULL};
         BigInt nonzero = {{0x666, 0}, 2, NULL};
-        BigInt quotient, remainder;
-
-        quotient.n = 2;
-        remainder.n = 2;
+        BigInt quotient = {0}, remainder = {0};
 
         /* Zero division */
         divMod(&nonzero, &zero, &quotient, &remainder);
