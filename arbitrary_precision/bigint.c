@@ -18,14 +18,14 @@ typedef struct
 
 void dump(const BigInt *bi, const char *header)
 {
-	size_t n = bi->n;
+    size_t n = bi->n;
 
-	printf("%s", header);
-	while (n --> 0)
-	{
-		printf("%08x ", bi->words[n]);
-	}
-	printf("\n");
+    printf("%s", header);
+    while (n --> 0)
+    {
+        printf("%08x ", bi->words[n]);
+    }
+    printf("\n");
 }
 
 #define BIGINT_TYPE BigInt
@@ -109,15 +109,15 @@ int main()
     assert(high == 0xFFFFFFFE);
     assert(low == 1);
 
-	{
-		BigInt zero = {{0, 0, 0, 0}, 4, NULL};
-		BigInt nonzero = {{0, 1, 0, 0}, 4, NULL};
+    {
+        BigInt zero = {{0, 0, 0, 0}, 4, NULL};
+        BigInt nonzero = {{0, 1, 0, 0}, 4, NULL};
 
-		assert(isZero(&zero));
-		assert(!isZero(&nonzero));
+        assert(isZero(&zero));
+        assert(!isZero(&nonzero));
         free(zero.dummy);
         free(nonzero.dummy);
-	}
+    }
     {
         BigInt A = {{0x87654321, 0x2468ACE0, 0x369CF258, 0x48C048C0}, 4, NULL};
         BigInt B = {{0x88888888, 0xF2222222, 0x33333333, 0xC4444444}, 4, NULL};
@@ -564,61 +564,64 @@ int main()
         assert(remainder.words[2] == 0x00000000);
         assert(remainder.words[3] == 0x00000000);
     }
-	{
-		BigInt zero = {{0}, 2, NULL};
-		BigInt nonzero = {{0x666, 0}, 2, NULL};
-		BigInt quotient, remainder;
+    {
+        BigInt zero = {{0}, 2, NULL};
+        BigInt nonzero = {{0x666, 0}, 2, NULL};
+        BigInt quotient, remainder;
 
-		/* Zero division */
-		divMod(&nonzero, &zero, &quotient, &remainder);
-		assert(quotient.n == 2);
-		assert(quotient.words[0] == 0xFFFFFFFF);
-		assert(quotient.words[1] == 0xFFFFFFFF);
-		assert(remainder.n == 2);
-		assert(remainder.words[0] == 0x00000666);
-		assert(remainder.words[1] == 0x00000000);
+        quotient.n = 2;
+        remainder.n = 2;
 
-		/* Dividing zero */
-		divMod(&zero, &nonzero, &quotient, &remainder);
-		assert(quotient.n == 2);
-		assert(quotient.words[0] == 0x00000000);
-		assert(quotient.words[1] == 0x00000000);
+        /* Zero division */
+        divMod(&nonzero, &zero, &quotient, &remainder);
+        assert(quotient.n == 2);
+        assert(quotient.words[0] == 0xFFFFFFFF);
+        assert(quotient.words[1] == 0xFFFFFFFF);
+        assert(remainder.n == 2);
+        assert(remainder.words[0] == 0x00000666);
+        assert(remainder.words[1] == 0x00000000);
 
-		assert(remainder.n == 2);
-		assert(remainder.words[0] == 0x00000000);
-		assert(remainder.words[1] == 0x00000000);
-	}
-	{
-		BigInt A = {{857656800}, 1, NULL};
-		BigInt B = {{338888693}, 1, NULL};
-		BigInt gcd = {0};
-		BigInt bigA = {{0x8cc61a06, 0xbfe2f415, 0x09e0bd38}, 3, NULL}; /* 3057058046095595223711619590 */
-		BigInt bigB = {{0x508f2706, 0xc06af417, 0x006fb794}, 3, NULL}; /* 135057703026874676266608390 */
-		BigInt zero = {{0, 0}, 2, NULL};
+        /* Dividing zero */
+        divMod(&zero, &nonzero, &quotient, &remainder);
+        assert(quotient.n == 2);
+        assert(quotient.words[0] == 0x00000000);
+        assert(quotient.words[1] == 0x00000000);
 
-		/* Quick sanity to see the algorithm works.*/
-		gcdEuclidean(&A, &B, &gcd);
-		assert(gcd.n == 1);
-		assert(gcd.words[0] == 2431);
+        assert(remainder.n == 2);
+        assert(remainder.words[0] == 0x00000000);
+        assert(remainder.words[1] == 0x00000000);
+    }
+    {
+        BigInt A = {{857656800}, 1, NULL};
+        BigInt B = {{338888693}, 1, NULL};
+        BigInt gcd = {0};
+        BigInt bigA = {{0x8cc61a06, 0xbfe2f415, 0x09e0bd38}, 3, NULL}; /* 3057058046095595223711619590 */
+        BigInt bigB = {{0x508f2706, 0xc06af417, 0x006fb794}, 3, NULL}; /* 135057703026874676266608390 */
+        BigInt zero = {{0, 0}, 2, NULL};
 
-		/* Try something large. */
-		gcdEuclidean(&bigA, &bigB, &gcd);
-		assert(gcd.n == 3); /* 21169176758730 */
-		assert(gcd.words[0] == 0xd542c9ca);
-		assert(gcd.words[1] == 0x00001340);
-		assert(gcd.words[2] == 0x00000000);
+        /* Quick sanity to see the algorithm works.*/
+        gcdEuclidean(&A, &B, &gcd);
+        assert(gcd.n == 1);
+        assert(gcd.words[0] == 2431);
 
-		/* Mess with zero. */
-		gcdEuclidean(&bigA, &zero, &gcd);
-		assert(gcd.n == 2);
-		assert(gcd.words[0] == 0x8cc61a06);
-		assert(gcd.words[1] == 0xbfe2f415);
+        /* Try something large. */
+        gcdEuclidean(&bigA, &bigB, &gcd);
+        assert(gcd.n == 3); /* 21169176758730 */
+        assert(gcd.words[0] == 0xd542c9ca);
+        assert(gcd.words[1] == 0x00001340);
+        assert(gcd.words[2] == 0x00000000);
 
-		gcdEuclidean(&zero, &bigA, &gcd);
-		assert(gcd.n == 3);
-		assert(gcd.words[0] == 0x8cc61a06);
-		assert(gcd.words[1] == 0xbfe2f415);
-		assert(gcd.words[2] == 0x09e0bd38);
+        /* Mess with zero. */
+        gcdEuclidean(&bigA, &zero, &gcd);
+        assert(gcd.n == 2);
+        assert(gcd.words[0] == 0x8cc61a06);
+        assert(gcd.words[1] == 0xbfe2f415);
+
+        gcdEuclidean(&zero, &bigA, &gcd);
+        assert(gcd.n == 3);
+        assert(gcd.words[0] == 0x8cc61a06);
+        assert(gcd.words[1] == 0xbfe2f415);
+        assert(gcd.words[2] == 0x09e0bd38);
 
         free(A.dummy);
         free(B.dummy);
@@ -626,7 +629,7 @@ int main()
         free(bigA.dummy);
         free(bigB.dummy);
         free(zero.dummy);
-	}
+    }
     {
         /* Quick sanity to see the extended euclidean works.*/
         BigInt A = {{2310}, 1, NULL};

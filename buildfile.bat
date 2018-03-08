@@ -13,6 +13,6 @@ IF [%1] == [] (
 SET FILENAME=%1
 
 
-cl -I %CD% -W4 -WX -DUNIT_TEST -Fetestprogram.exe %FILENAME%
+cl -I %CD% -W4 -WX -DUNIT_TEST -Zi -Fetestprogram.exe %FILENAME%
 
 :eof
