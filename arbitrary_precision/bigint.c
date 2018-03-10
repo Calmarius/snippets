@@ -839,6 +839,42 @@ int main()
         free(witness.dummy);
         free(toTest.dummy);
     }
+    {
+        BigInt a = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 4, NULL};
+        BigInt b = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}, 3, NULL};
+        BigInt prod;
+
+        mulEx(&a, &b, &prod);
+        assert(prod.n == 7);
+        assert(prod.words[0] == 1);
+        assert(prod.words[1] == 0);
+        assert(prod.words[2] == 0);
+        assert(prod.words[3] == 0xFFFFFFFF);
+        assert(prod.words[4] == 0xFFFFFFFE);
+        assert(prod.words[5] == 0xFFFFFFFF);
+        assert(prod.words[6] == 0xFFFFFFFF);
+
+        free(prod.dummy);
+    }
+    {
+        BigInt a = {{14}, 1, NULL};
+        BigInt b ={{21, 0}, 2, NULL};
+        BigInt res;
+        BigInt zero = {{0}, 1, NULL};
+
+        lcm(&a, &b, &res);
+        assert(res.n == 3);
+        assert(res.words[0] == 42);
+        assert(res.words[1] == 0);
+        assert(res.words[2] == 0);
+        free(res.dummy);
+
+        lcm(&a, &zero, &res);
+        assert(res.n == 2);
+        assert(res.words[0] == 0);
+        assert(res.words[1] == 0);
+        free(res.dummy);
+    }
 
     printf("ALL is OK! %s %s\n", __DATE__, __TIME__);
     return 0;

@@ -25,28 +25,28 @@
 
 #ifndef GETWORD
     /* Example: #define GETWORD(bi, i) ((bi)->words[i]) */
-    #error Please define GETWORD to be able to read a word in the bigint. Words must be in lettle endian order.
+    #error Please define GETWORD(bigint, i) to be able to read a word in the bigint. Words must be in lettle endian order.
 #endif
 
 #ifndef SETWORD
     /* Example: #define SETWORD(bi, i, word) ((bi)->words[i] = (word)) */
-    #error Please define SETWORD to be able to set a word in the bigint. Words must be in lettle endian order.
+    #error Please define SETWORD(bigint, i, word) to be able to set a word in the bigint. Words must be in lettle endian order.
 #endif
 
 #ifndef GETNWORDS
     /* Example: #define GETNWORDS(bi) (bi->nWords) */
-    #error Please define GETNWORDS to be the macro the queries the number of words in a bigint. This can be defined to be a constant if the number of words is empty.
+    #error Please define GETNWORDS(bigint) to be the macro the queries the number of words in a bigint. This can be defined to be a constant if the number of words is empty.
 #endif
 
 #ifndef ZERO_BIGINT
     /* Example: #define ZEROBIGINT(bi) (memset(bi, 0, (bi).n * sizeof(WORD_TYPE))*/
     /* This macro should zero all words in the specified bigint. */
-    #error Please define ZERO_BIGINT to be the macro that zeroes big integers.
+    #error Please define ZERO_BIGINT(bigint) to be the macro that zeroes big integers.
 #endif
 
 #ifndef SETNWORDS
     /* Example: #define SETNWORDS(bi, n) ((bi)->nWords = (n)) */
-    #error Please define SETNWORDS to be the macro the set the number of words in a bigint. This can be defined to be empty if the number of words is fixed.
+    #error Please define SETNWORDS(bigint, n) to be the macro the set the number of words in a bigint. This can be defined to be empty if the number of words is fixed.
 #endif
 
 #ifndef DUMP_BIGINT
@@ -59,6 +59,41 @@
 #define HALF_WORD_BASE (1 << HALF_WORD_BITS)
 
 #define HALF_WORD_MASK (HALF_WORD_BASE - 1)
+
+#ifdef NUM_THEORY
+
+/* These functions create big integers within them so the user must provide these macros*/
+
+#ifndef COPY_BIGINT/*(dst, src)*/
+    /* Example: #define COPY_BIGINT(dst, src) {(dst)->words = realloc((dst)->words, (src)->n*sizeof((src)->words[0])); memcpy((dst)->words, (src)->words, (src)->n*sizeof((src)->words[0])); (dst)->n = (src)->n; }
+     * This macro should cleanup the previous content and deep copy the contents of the source.
+     * On failed allocation it should "goto cleanup" and possibly set a thread local error variable.
+     */
+    #error Please define COPY_BIGINT(dstBigint, srcBigint) as a means to copy big integers.
+#endif
+
+#ifndef ALLOC_BIGINT/*(bigint, nWords)*/
+    /* Example: #define ALLOC_BIGINT(bi, nWords) {(bi)->n = (nWords); (bi)->words = malloc(nWords*sizeof(*(bi)->words)); }*/
+    /* This macro should clean up the previous content and allocate the requested amount of words.
+     * On failed allocation it should "goto cleanup" and possibly set a thread local error variable.
+     */
+    #error Please define ALLOC_BIGINT(bigint, nWords) as a way to initialize space in big integers.
+#endif
+
+#ifndef INIT_EMPTY/*(bigint)*/
+    /* Example: #define INIT_EMPTY(bi) {(bi)->n = 0; (bi)->words = NULL; }*/
+    /* This macro should initialize and empty bigint that can be cleaned up without problems. Failure to cleanup an empty bigint shouldn't cause resource leaks. */
+    /* Note: this macro shouldn't clean up the previous contents as it should be used for the first initialization. */
+    #error Please define INIT_EMPTY(bigint) as a way to initialize empty big integers.
+#endif
+
+#ifndef DEINIT_BIGINT/*(bigint)*/
+    /* Example: #define DEINIT_BIGINT(bi) {free((bi)->words);} */
+    /* The purpose of this macro is to clean up big integers, to avoid resource leaks. */
+    #error Please define DEINIT_BIGINT(bigint) as a way to clean up space in big integers.
+#endif
+
+#endif
 
 #ifdef DECLARE_STUFF
 /**
@@ -250,34 +285,6 @@ SPECIFIER void FN(divMod)(
 
 #ifdef NUM_THEORY
 
-/* These functions create big integers within them so the user must provide these macros*/
-
-#ifndef COPY_BIGINT/*(dst, src)*/
-    /* Example: #define COPY_BIGINT(dst, src) {(dst)->words = realloc((dst)->words, (src)->n*sizeof((src)->words[0])); memcpy((dst)->words, (src)->words, (src)->n*sizeof((src)->words[0])); (dst)->n = (src)->n; } */
-    /* This macro should cleanup the previous content and deep copy the contents of the source.
-     */
-    #error Please define COPY_BIGINT as a means to copy big integers.
-#endif
-
-#ifndef ALLOC_BIGINT/*(bigint, nWords)*/
-    /* Example: #define ALLOC_BIGINT(bi, nWords) {(bi)->n = (nWords); (bi)->words = malloc(nWords*sizeof(*(bi)->words)); }*/
-    /* This macro should clean up the previous content and allocate the requested amount of words.
-     */
-    #error Please define ALLOC_BIGINT as a way to initialize space in big integers.
-#endif
-
-#ifndef INIT_EMPTY/*(bigint)*/
-    /* Example: #define INIT_EMPTY(bi) {(bi)->n = 0; (bi)->words = NULL; }*/
-    /* This macro should initialize and empty bigint that can be cleaned up without problems. Failure to cleanup an empty bigint shouldn't cause resource leaks. */
-    #error Please define INIT_EMPTY as a way to initialize empty big integers.
-#endif
-
-#ifndef DEINIT_BIGINT/*(bigint)*/
-    /* Example: #define DEINIT_BIGINT(bi) {free((bi)->words);} */
-    /* The purpose of this macro is to clean up big integers, to avoid resource leaks. */
-    #error Please define DEINIT_BIGINT as a way to clean up space in big integers.
-#endif
-
 /**
  * Calculates the greatest common divisor of the big integers.
  *
@@ -340,6 +347,32 @@ SPECIFIER int FN(modPow)(
 SPECIFIER int FN(mrTest)(
     const BIGINT_TYPE *toTest,
     const BIGINT_TYPE *witnessToTest
+);
+
+
+/**
+ * Performs multiplication just like mul, but it will allocate storage for the result instead of relying on the caller.
+ *
+ * a, b (in): The arguments to multiply.
+ * res (out): The result, the caller most clean it up.
+ */
+SPECIFIER void mulEx(
+    const BIGINT_TYPE *a,
+    const BIGINT_TYPE *b,
+    BIGINT_TYPE *res
+);
+
+
+/**
+ *  Computes the least common multiple.
+ *
+ *  a,b (in): The two numbers.
+ *  lcm (out): The result. The caller must clean it up.
+ */
+SPECIFIER void FN(lcm)(
+    const BIGINT_TYPE *a,
+    const BIGINT_TYPE *b,
+    BIGINT_TYPE *lcm
 );
 #endif
 
@@ -796,6 +829,7 @@ cleanup:
 	DEINIT_BIGINT(&low);
 }
 
+
 SPECIFIER void FN(gcdExtendedEuclidean)(
     const BIGINT_TYPE *a,
     const BIGINT_TYPE *b,
@@ -1026,6 +1060,52 @@ cleanup:
     DEINIT_BIGINT(&pMinus1);
     return retVal;
 }
+
+
+SPECIFIER void FN(mulEx)(
+    const BIGINT_TYPE *a,
+    const BIGINT_TYPE *b,
+    BIGINT_TYPE *res
+)
+{
+    size_t nA = GETNWORDS(a);
+    size_t nB = GETNWORDS(b);
+
+    INIT_EMPTY(res);
+    ALLOC_BIGINT(res, nA + nB);
+
+    FN(mul)(a, b, res);
+
+    goto cleanup;
+cleanup:;
+}
+
+
+SPECIFIER void FN(lcm)(
+    const BIGINT_TYPE *a,
+    const BIGINT_TYPE *b,
+    BIGINT_TYPE *lcm
+)
+{
+    BIGINT_TYPE gcd;
+    BIGINT_TYPE tmp, tmp2;
+
+    FN(gcdEuclidean)(a, b, &gcd);
+    INIT_EMPTY(&tmp);
+    ALLOC_BIGINT(&tmp, GETNWORDS(a));
+    INIT_EMPTY(&tmp2);
+    ALLOC_BIGINT(&tmp2, GETNWORDS(&gcd));
+
+    FN(divMod)(a, &gcd, &tmp, &tmp2);
+    FN(mulEx)(&tmp, b, lcm);
+
+    goto cleanup;
+cleanup:
+    DEINIT_BIGINT(&gcd);
+    DEINIT_BIGINT(&tmp);
+    DEINIT_BIGINT(&tmp2);
+}
+
 
 
 
